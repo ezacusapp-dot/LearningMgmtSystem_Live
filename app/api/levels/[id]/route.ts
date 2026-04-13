@@ -17,7 +17,7 @@ import {
   updateLevelController,
   deleteLevelController,
 } from "@/modules/levels/level.controller";
-
+export const dynamic = "force-dynamic";
 // UPDATE
 export async function PUT(
   req: Request,

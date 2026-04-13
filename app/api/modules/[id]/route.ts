@@ -22,7 +22,7 @@ import {
   updateModuleController,
   deleteModuleController,
 } from "@/modules/modules/modules.controller";
-
+export const dynamic = "force-dynamic";
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }

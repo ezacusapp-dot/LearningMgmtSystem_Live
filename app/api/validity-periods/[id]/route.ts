@@ -15,7 +15,7 @@
 // }
 // app/api/validity-period/[id]/route.ts
 import { updateValidityController, deleteValidityController } from "@/modules/validity-period/validityPeriod.controller";
-
+export const dynamic = "force-dynamic";
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return updateValidityController(req, id);
