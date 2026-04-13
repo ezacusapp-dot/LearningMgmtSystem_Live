@@ -18,7 +18,7 @@
 // }
 // app/api/courses/[id]/route.ts
 import { updateCourseController, deleteCourseController } from "@/modules/courses/courses.controller";
-
+export const dynamic = "force-dynamic";
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return updateCourseController(req, id);
