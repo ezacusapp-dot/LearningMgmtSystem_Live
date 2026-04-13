@@ -8,7 +8,7 @@ let _key: KeyObject | null = null;
 function getKey(): KeyObject {
   if (_key) return _key;
 
-  const secret = process.env.PASETO_SECRET;
+  const secret = "8d048c2092bc0e5aa9258064497ea013c6ef5c2c1b6909c78f90af7edbf83787";
   if (!secret) throw new Error("PASETO_SECRET is not set in environment variables.");
 
   const keyBytes = Buffer.from(secret, "hex");
