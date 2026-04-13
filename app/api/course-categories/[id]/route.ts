@@ -18,7 +18,7 @@
 // }
 // app/api/course-categories/[id]/route.ts
 import { updateCategoryController, deleteCategoryController } from "@/modules/course-categories/course-category.controller";
-
+export const dynamic = "force-dynamic";
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return updateCategoryController(req, id);
