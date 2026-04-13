@@ -1,5 +1,5 @@
 import {updateAwardCategoryController,deleteAwardCategoryController,} from "@/modules/award-category/awardCategory.controller";
-
+export const dynamic = "force-dynamic";
 // UPDATE
 // export async function PUT(
 //   req: Request,
