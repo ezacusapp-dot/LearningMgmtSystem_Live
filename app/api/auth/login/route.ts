@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/paseto";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs"; // 👈 required for paseto + bcrypt + prisma
 
 export async function POST(req: Request) {

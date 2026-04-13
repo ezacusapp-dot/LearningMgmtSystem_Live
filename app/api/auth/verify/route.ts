@@ -1,7 +1,7 @@
 // app/api/auth/verify/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/paseto";
-
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs"; // ✅ Safe here — API routes support Node.js
 
 export async function POST(req: NextRequest) {
