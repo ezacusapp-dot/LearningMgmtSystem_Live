@@ -51,52 +51,56 @@ export default function SignInPage() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+  // In your SignInPage component
+const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
 
-        if (!validateForm()) return;
+  if (!validateForm()) return;
 
-        try {
-            setLoading(true);
-console.log(process.env.NEXT_PUBLIC_API_URL);
-            const res = await fetch(
-                `/api/auth/login`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                    },
-                    body: JSON.stringify({
-                        email: formData.email,
-                        password: formData.password,
-                    }),
-                },
-            );
+  try {
+    setLoading(true);
+    
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      },
+    );
 
-            const data = await res.json();
+    const data = await res.json();
 
-            if (res.ok) {
-                login({
-                    token: data.token,
-                    role: data.role,
-                   name: data.name,
-                   email: data.email
-                });
+    // ✅ Check both res.ok and data.success
+    if (res.ok && data.success) {
+      login({
+        token: data.token,
+        role: data.role,
+        name: data.name,
+        email: data.email,
+        id: data.id,
+      });
 
-                toast.success(data.message || "Login successful!");
+      toast.success(data.message || "Login successful!");
 
-                router.push("/admin/dashboard");
-            } else {
-                toast.error(data.message || "Invalid credentials");
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("Something went wrong. Try again later.");
-        } finally {
-            setLoading(false);
-        }
-    };
+      // ✅ Redirect to admin dashboard
+      router.push("/admin/dashboard");
+    } else {
+      toast.error(data.message || "Invalid credentials");
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error("Something went wrong. Try again later.");
+  } finally {
+    setLoading(false);
+  }
+};
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const name = e.target.name as keyof FormData;

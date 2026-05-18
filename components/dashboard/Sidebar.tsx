@@ -46,13 +46,14 @@ const mainNav: NavItem[] = [
   {
     label: "School",
     icon: <Globe size={15} strokeWidth={1.8} />,
-    href: "/dashboard/school",
+    href: "/admin/dashboard/school",
     badge: 24,
   },
   {
     label: "Students",
     icon: <Users size={15} strokeWidth={1.8} />,
-    href: "/dashboard/students",
+    href: "/admin/dashboard/student",
+    badge: 24,
   },
   {
     label: "Course Builder",
@@ -89,8 +90,10 @@ const mainNav: NavItem[] = [
          { label: "Duration Type",   href: "/admin/dashboard/master/duration" },
            { label: "Levels",           href: "/admin/dashboard/master/levels" },
   { label: "Course Category", href: "/admin/dashboard/master/course-categories" },
+  { label: "Courses",         href: "/admin/dashboard/master/courses" },
      { label: "Modules",          href: "/admin/dashboard/master/module" },  
   { label: "Lesson",          href: "/admin/dashboard/master/lesson" },
+    { label: "Grades",          href: "/admin/dashboard/master/grade" },
 
 
     ],

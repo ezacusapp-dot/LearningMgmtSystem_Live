@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 interface DurationType {
   id: string;
-  name: string;
+  value: number;
+  unit: "Days" | "Weeks" | "Months" | "Years";
   sortOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -21,6 +22,7 @@ interface PaginatedResponse {
   };
 }
 
+const UNIT_OPTIONS = ["Days", "Weeks", "Months", "Years"] as const;
 const LIMIT = 10;
 
 export default function Duration() {
@@ -35,7 +37,12 @@ export default function Duration() {
   const [editItem, setEditItem] = useState<DurationType | null>(null);
   const [deleteItem, setDeleteItem] = useState<DurationType | null>(null);
 
-  const [form, setForm] = useState({ name: "", sortOrder: "", isActive: true });
+  const [form, setForm] = useState({
+    value: "1",
+    unit: "Months" as typeof UNIT_OPTIONS[number],
+    sortOrder: "",
+    isActive: true,
+  });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -65,14 +72,15 @@ export default function Duration() {
 
   const openAdd = () => {
     setEditItem(null);
-    setForm({ name: "", sortOrder: "", isActive: true });
+    setForm({ value: "1", unit: "Months", sortOrder: "", isActive: true });
     setModalOpen(true);
   };
 
   const openEdit = (item: DurationType) => {
     setEditItem(item);
     setForm({
-      name: item.name,
+      value: String(item.value),
+      unit: item.unit,
       sortOrder: String(item.sortOrder),
       isActive: item.isActive,
     });
@@ -85,12 +93,12 @@ export default function Duration() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
     setSaving(true);
     try {
       if (editItem) {
         const payload: Record<string, unknown> = {
-          name: form.name.trim(),
+          value: Number(form.value) || 1,
+          unit: form.unit,
           isActive: form.isActive,
         };
         if (form.sortOrder !== "") payload.sortOrder = Number(form.sortOrder);
@@ -102,7 +110,8 @@ export default function Duration() {
         });
       } else {
         const payload: Record<string, unknown> = {
-          name: form.name.trim(),
+          value: Number(form.value) || 1,
+          unit: form.unit,
         };
         if (form.sortOrder !== "") payload.sortOrder = Number(form.sortOrder);
 
@@ -170,7 +179,8 @@ export default function Duration() {
           <thead>
             <tr>
               <th className="dt-th dt-th-no">Sr.No</th>
-              <th className="dt-th">Duration Type Name</th>
+              <th className="dt-th">Value</th>
+              <th className="dt-th">Unit</th>
               <th className="dt-th dt-th-center">Status</th>
               <th className="dt-th">Created At</th>
               <th className="dt-th dt-th-center">Actions</th>
@@ -179,13 +189,13 @@ export default function Duration() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="dt-empty">
+                <td colSpan={6} className="dt-empty">
                   <div className="dt-spinner" />
                 </td>
               </tr>
             ) : durations.length === 0 ? (
               <tr>
-                <td colSpan={5} className="dt-empty">
+                <td colSpan={6} className="dt-empty">
                   <EmptyIcon />
                   <p>No duration types found</p>
                 </td>
@@ -196,7 +206,10 @@ export default function Duration() {
                   <td className="dt-td dt-td-no">
                     {(page - 1) * LIMIT + idx + 1}
                   </td>
-                  <td className="dt-td dt-td-name">{dt.name}</td>
+                  <td className="dt-td">{dt.value}</td>
+                  <td className="dt-td">
+                    <span className="dt-badge-unit">{dt.unit}</span>
+                  </td>
                   <td className="dt-td dt-td-center">
                     <span
                       className={`dt-badge-status ${dt.isActive ? "active" : "inactive"}`}
@@ -277,17 +290,47 @@ export default function Duration() {
             </div>
 
             <div className="dt-modal-body">
+              {/* Value */}
               <div className="dt-field">
                 <label className="dt-label">
-                  Duration Type Name <span className="dt-req">*</span>
+                  Value <span className="dt-req">*</span>
                 </label>
                 <input
                   className="dt-input"
-                  placeholder="e.g. Monthly"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  type="number"
+                  min={1}
+                  placeholder="e.g. 3"
+                  value={form.value}
+                  onChange={(e) => setForm({ ...form, value: e.target.value })}
                 />
               </div>
+
+              {/* Unit */}
+              <div className="dt-field">
+                <label className="dt-label">Unit</label>
+                <select
+                  className="dt-input"
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value as any })}
+                >
+                  {UNIT_OPTIONS.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sort Order */}
+              {/* <div className="dt-field">
+                <label className="dt-label">Sort Order</label>
+                <input
+                  className="dt-input"
+                  type="number"
+                  min={0}
+                  placeholder="Display order (optional)"
+                  value={form.sortOrder}
+                  onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
+                />
+              </div> */}
 
               {editItem && (
                 <div className="dt-field dt-field-row">
@@ -316,7 +359,7 @@ export default function Duration() {
               <button
                 className="dt-btn-save"
                 onClick={handleSave}
-                disabled={saving || !form.name.trim()}
+                disabled={saving || !form.value || Number(form.value) < 1}
               >
                 {saving ? "Saving..." : editItem ? "Update" : "Create"}
               </button>
@@ -345,8 +388,8 @@ export default function Duration() {
               <div className="dt-delete-warn">
                 <WarnIcon />
                 <p>
-                  Are you sure you want to delete{" "}
-                  <strong>{deleteItem.name}</strong>? This action cannot be
+                  Are you sure you want to delete duration type with value{" "}
+                  <strong>{deleteItem.value} {deleteItem.unit}</strong>? This action cannot be
                   undone.
                 </p>
               </div>
@@ -456,6 +499,16 @@ const styles = `
     font-size: 0.85rem;
     color: #64748b;
     margin: 0;
+  }
+  .dt-badge-unit {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: #1a2a3a;
+    color: #60a5fa;
+    border: 1px solid #1e4a72;
   }
 
   /* ── Add Button ── */
