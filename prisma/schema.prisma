@@ -1,4 +1,5 @@
 // prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,7 +9,107 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== MASTER DATA TABLES ====================
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum ModuleType {
+  LESSON
+  REVISION
+  QUIZ
+  FINAL_QUIZ
+}
+
+enum ContentType {
+  VIDEO
+  PDF
+  DOCUMENT
+  ASSIGNMENT
+  LINK
+}
+
+enum DurationUnit {
+  Days
+  Weeks
+  Months
+  Years
+}
+
+enum RevisionContentType {
+  VIDEO
+  PDF
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  SCHOOL_ADMIN
+  STUDENT
+  PARENT
+}
+
+enum CourseStatus {
+  Draft
+  Published
+  Archived
+}
+
+enum Difficulty {
+  Easy
+  Medium
+  Hard
+}
+
+enum BloomLevel {
+  Remember
+  Understand
+  Apply
+  Analyze
+  Evaluate
+  Create
+}
+
+enum QuestionType {
+  Conceptual
+  OutputPrediction
+  ProblemSolving
+  Debugging
+}
+
+enum InputMode {
+  text
+  image
+}
+
+enum SubscriptionStatus {
+  active
+  trial
+  expired
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model School {
+  id           String             @id @default(uuid())
+  name         String             @unique
+  adminName    String
+  adminEmail   String             @unique
+  phone        String
+  address      String
+  region       String
+  state        String
+  students     Int                @default(0)
+  active       Boolean            @default(true)
+  subscription SubscriptionStatus @default(trial)
+  performance  Int                @default(0)
+  password     String
+  role         UserRole           @default(SCHOOL_ADMIN)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@map("schools")
+}
 
 model CourseLevel {
   id        String   @id @default(cuid())
@@ -19,21 +120,24 @@ model CourseLevel {
   updatedAt DateTime @updatedAt
 
   categories CourseCategory[]
-  Courses    Courses[]
+  courses    Courses[]
 
   @@map("course_levels")
 }
 
 model CourseDurationType {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  sortOrder Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String       @id @default(cuid())
+  value     Int          @default(1)
+  unit      DurationUnit @default(Months)
+  sortOrder Int          @default(0)
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   categories CourseCategory[]
+  courses    Courses[]
 
+  @@unique([value, unit])
   @@map("course_duration_types")
 }
 
@@ -50,7 +154,29 @@ model AwardCategory {
   @@map("award_categories")
 }
 
-// ==================== COURSE CATEGORY ====================
+model ValidityPeriod {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("validity_periods")
+}
+
+model Grade {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses CourseGrade[]
+
+  @@map("grades")
+}
 
 model CourseCategory {
   id                 String    @id @default(cuid())
@@ -69,26 +195,24 @@ model CourseCategory {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  // Relations
   levelId        String?
   level          CourseLevel?        @relation(fields: [levelId], references: [id])
   durationTypeId String?
   durationType   CourseDurationType? @relation(fields: [durationTypeId], references: [id])
 
   certificateTemplate CertificateTemplate?
-  Courses             Courses[]
+  courses             Courses[]
 
   @@map("course_categories")
 }
 
-// ==================== CERTIFICATE TEMPLATE ====================
-
 model CertificateTemplate {
-  id                String   @id @default(cuid())
-  certificateName   String
-  passThreshold     Int      @default(75)
-  includeRanking    Boolean  @default(true)
-  includeScore      Boolean  @default(true)
+  id              String  @id @default(cuid())
+  certificateName String
+  passThreshold   Int     @default(75)
+  includeRanking  Boolean @default(true)
+  includeScore    Boolean @default(true)
+
   validityPeriod    String   @default("Lifetime")
   gradeA            Int      @default(90)
   gradeB            Int      @default(75)
@@ -104,7 +228,6 @@ model CertificateTemplate {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  // Relations
   categoryId      String         @unique
   category        CourseCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   awardCategoryId String?
@@ -113,102 +236,23 @@ model CertificateTemplate {
   @@map("certificate_templates")
 }
 
-model ValidityPeriod {
+model User {
   id        String   @id @default(uuid())
-  name      String   @unique
-  sortOrder Int      @default(0)
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("validity_periods") // IMPORTANT
-}
-
-model Courses {
-  id          String   @id @default(uuid())
-  title       String
-  categoryId  String?
-  levelId     String?
-  duration    String?
-  description String?
-  createdBy   String?
-  status      String   @default("Draft")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  Modules        Modules[]
-  CourseLevel    CourseLevel?    @relation(fields: [levelId], references: [id])
-  CourseCategory CourseCategory? @relation(fields: [categoryId], references: [id])
-
-  @@map("courses")
-}
-
-model Modules {
-  id          String   @id @default(uuid())
-  courseId    String
-  title       String
-  order       Int
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  courses Courses @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  lessons Lessons[]
-
-  @@unique([courseId, order])
-  @@map("modules")
-}
-
-enum ContentType {
-  Video
-  PDF
-  Document
-  Assignment
-  Link
-}
-
-model Lessons {
-  id          String  @id @default(uuid())
-  moduleId    String
-  title       String
-  contentType String // Video / PDF / Assignment / Link
-  fileUrl     String? // optional (for link/video/pdf)
-  order       Int
-  isActive    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  module Modules @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
-  @@unique([moduleId, order])
-  @@map("lessons")
-}
-
-// ==================== AUTH SYSTEM ====================
-
-model User {
-  id       String   @id @default(uuid())
-  name     String
-  email    String   @unique
-  password String
-  role     UserRole
-  isActive Boolean  @default(true)
-
-  sessions Session[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  sessions       Session[]
+  moduleProgress UserModuleProgress[]
+  lessonProgress UserLessonProgress[]
+  quizAttempts   UserQuizAttempt[]
+  enrollments    UserCourseEnrollment[]
 
   @@map("users")
-}
-
-enum UserRole {
-  SUPER_ADMIN
-  SCHOOL_ADMIN
-  STUDENT
-  PARENT
 }
 
 model Session {
@@ -216,10 +260,304 @@ model Session {
   userId    String
   token     String   @unique
   expiresAt DateTime
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-
   @@map("sessions")
+}
+
+model Courses {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+
+  durationTypeId String?
+  durationType   CourseDurationType? @relation(fields: [durationTypeId], references: [id])
+
+  thumbnailUrl String?
+  status       CourseStatus @default(Draft)
+  createdBy    String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  levelId        String?
+  categoryId     String?
+  courseLevel    CourseLevel?    @relation(fields: [levelId], references: [id])
+  courseCategory CourseCategory? @relation(fields: [categoryId], references: [id])
+
+  modules     Modules[]
+  enrollments UserCourseEnrollment[]
+  grades      CourseGrade[]
+
+  @@map("courses")
+}
+
+model CourseGrade {
+  courseId String
+  gradeId  String
+  course   Courses @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  grade    Grade   @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, gradeId])
+  @@map("course_grades")
+}
+
+model Modules {
+  id          String     @id @default(uuid())
+  courseId    String
+  title       String
+  type        ModuleType @default(LESSON)
+  order       Int
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  course Courses @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessons  Lessons[]
+  revision Revision?
+  quiz     Quiz?
+  progress UserModuleProgress[]
+
+  @@unique([courseId, order])
+  @@index([courseId])
+  @@map("modules")
+}
+
+model Lessons {
+  id          String      @id @default(uuid())
+  moduleId    String
+  title       String
+  contentType ContentType
+  fileUrl     String?
+  order       Int
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  module   Modules              @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress UserLessonProgress[]
+
+  @@unique([moduleId, order])
+  @@index([moduleId])
+  @@map("lessons")
+}
+
+model Revision {
+  id        String   @id @default(uuid())
+  moduleId  String   @unique
+  title     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module   Modules           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  contents RevisionContent[]
+
+  @@map("revisions")
+}
+
+model RevisionContent {
+  id          String              @id @default(uuid())
+  revisionId  String
+  contentType RevisionContentType
+  fileUrl     String
+  order       Int
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  revision Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@index([revisionId])
+  @@map("revision_contents")
+}
+
+model Quiz {
+  id           String   @id @default(uuid())
+  moduleId     String   @unique
+  passingMarks Int
+  totalMarks   Int
+  duration     Int?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  module    Modules           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  UserQuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model Question {
+  id           String        @id @default(uuid())
+  quizId       String
+  question     String
+  order        Int
+  points       Int           @default(1)
+  difficulty   Difficulty?
+  bloomLevel   BloomLevel?
+  questionType QuestionType?
+  codeSnippet  String?       @db.Text
+  codeLanguage String?
+  explanation  String?       @db.Text
+
+  inputMode     InputMode @default(text)
+  questionImage String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quiz    Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options Option[]
+  answers UserQuizAnswer[]
+
+  @@index([quizId])
+  @@map("questions")
+}
+
+model Option {
+  id         String   @id @default(uuid())
+  questionId String
+  text       String
+  isCorrect  Boolean
+  order      Int
+
+  inputMode String? @default("text")
+  imageData String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  UserQuizAnswer[]
+
+  @@index([questionId])
+  @@map("options")
+}
+
+// ============================================================
+// USER — ENROLLMENT & PROGRESS
+// ============================================================
+
+model UserCourseEnrollment {
+  id         String    @id @default(uuid())
+  userId     String
+  courseId   String
+  isActive   Boolean   @default(true)
+  expiresAt  DateTime?
+  enrolledAt DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  startDate DateTime?
+  endDate   DateTime?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Courses @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessonProgress UserLessonProgress[]
+  quizAttempts   UserQuizAttempt[]
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@map("user_course_enrollments")
+}
+
+model UserModuleProgress {
+  id          String    @id @default(uuid())
+  userId      String
+  moduleId    String
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Modules @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+  @@map("user_module_progress")
+}
+
+
+model UserLessonProgress {
+  id           String    @id @default(uuid())
+  userId       String
+  lessonId     String
+  enrollmentId String?                          // ← add this
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson     Lessons               @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  enrollment UserCourseEnrollment? @relation(fields: [enrollmentId], references: [id]) // ← add this
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@map("user_lesson_progress")
+}
+
+
+model UserQuizAttempt {
+  id           String   @id @default(uuid())
+  userId       String
+  quizId       String
+  enrollmentId String?                          // ← add this
+  score        Int
+  isPassed     Boolean
+  timeTaken    Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz       Quiz                  @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  enrollment UserCourseEnrollment? @relation(fields: [enrollmentId], references: [id]) // ← add this
+  answers    UserQuizAnswer[]
+
+  @@unique([userId, quizId])
+  @@index([userId])
+  @@index([quizId])
+  @@map("user_quiz_attempts")
+}
+
+model UserQuizAnswer {
+  id         String   @id @default(uuid())
+  attemptId  String
+  questionId String
+  optionId   String
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
+
+  attempt  UserQuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question        @relation(fields: [questionId], references: [id])
+  option   Option          @relation(fields: [optionId], references: [id])
+
+  @@index([attemptId])
+  @@map("user_quiz_answers")
+}
+
+model Student {
+  id            Int      @id @default(autoincrement())
+  firstName     String
+  middleName    String?
+  lastName      String
+  studentEmail  String?
+  studentMobile String?
+  username      String   @unique
+  password      String
+  parentMobile  String
+  parentEmail   String?
+  standard      String
+  batch         String?
+  status        String   @default("Active")
+  schoolYear    String
+  address       String?
+  role          UserRole @default(STUDENT)
+  createdAt     DateTime @default(now())
 }

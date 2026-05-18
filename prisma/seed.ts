@@ -87,25 +87,8 @@ async function main() {
   }
   console.log("Validity periods seeded");
 
-  // ✅ Seed Duration Types
-  const durationTypes = [
-    { name: "Self-Paced", sortOrder: 1 },
-    { name: "1 Week", sortOrder: 2 },
-    { name: "2 Weeks", sortOrder: 3 },
-    { name: "1 Month", sortOrder: 4 },
-    { name: "3 Months", sortOrder: 5 },
-    { name: "6 Months", sortOrder: 6 },
-    { name: "1 Year", sortOrder: 7 },
-  ];
 
-  for (const dt of durationTypes) {
-    await prisma.courseDurationType.upsert({
-      where: { name: dt.name },
-      update: {},
-      create: dt,
-    });
-  }
-  console.log("Duration types seeded");
+
 
   // ✅ Seed Award Categories
   const awardCategories = [
