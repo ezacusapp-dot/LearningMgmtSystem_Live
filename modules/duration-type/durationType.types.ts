@@ -1,18 +1,23 @@
+export type DurationUnit = "Days" | "Weeks" | "Months" | "Years";
+
 export interface DurationType {
   id: string;
-  name: string;
+  value: number;
+  unit: DurationUnit;
   sortOrder: number;
   isActive: boolean;
   createdAt: Date;
 }
 
 export interface CreateDurationTypeDTO {
-  name: string;
+  value: number;
+  unit: DurationUnit;
   sortOrder?: number;
 }
 
 export interface UpdateDurationTypeDTO {
-  name?: string;
+  value?: number;
+  unit?: DurationUnit;
   sortOrder?: number;
   isActive?: boolean;
 }

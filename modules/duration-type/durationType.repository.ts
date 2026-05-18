@@ -5,10 +5,10 @@ export const createDurationTypeRepo = async (data: any) => {
   return prisma.courseDurationType.create({ data });
 };
 
-// FIND BY NAME
-export const findDurationTypeByNameRepo = async (name: string) => {
+// DELETE - removed find by name function since no longer needed
+export const findDurationTypeByValueAndUnitRepo = async (value: number, unit: string) => {
   return prisma.courseDurationType.findFirst({
-    where: { name },
+    where: { value, unit },
   });
 };
 

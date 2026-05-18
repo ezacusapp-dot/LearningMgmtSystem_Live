@@ -1,12 +1,16 @@
 import { z } from "zod";
 
+const DurationUnitEnum = z.enum(["Days", "Weeks", "Months", "Years"]);
+
 export const createDurationTypeSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  value: z.number().int().min(1, "Value must be at least 1"),
+  unit: DurationUnitEnum,
   sortOrder: z.number().optional(),
 });
 
 export const updateDurationTypeSchema = z.object({
-  name: z.string().optional(),
+  value: z.number().int().min(1).optional(),
+  unit: DurationUnitEnum.optional(),
   sortOrder: z.number().optional(),
   isActive: z.boolean().optional(),
 });

@@ -1,14 +1,65 @@
-import { z } from "zod";
+import { CourseStatus } from "@prisma/client";
 
-const createCourseSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  categoryId: z.string().optional(),
-  levelId: z.string().optional(),
-  duration: z.string().optional(),
-  description: z.string().optional(),
-  createdBy: z.string().optional(),
-});
+export interface OptionDto {
+  text:       string;
+  isCorrect:  boolean;
+  order:      number;
+  inputMode?: "text" | "image";
+  imageData?: string | null;
+}
 
-export const validateCreateCourse = (data: any) => {
-  return createCourseSchema.parse(data);
-};
+export interface QuestionDto {
+  text:          string;
+  points:        number;
+  difficulty?:   string;
+  bloomLevel?:   string;
+  questionType?: string;
+  codeSnippet?:  string | null;
+  codeLanguage?: string | null;
+  explanation?:  string | null;
+  options:       OptionDto[];
+  inputMode?:    "text" | "image";
+  questionImage?: string | null;
+}
+
+export interface LessonDto {
+  title:       string;
+  contentType: string;
+  fileUrl?:    string;
+  videoLinks?: string[];
+  order:       number;
+}
+
+export interface ModuleDto {
+  title:        string;
+  type:         "LESSON" | "REVISION" | "QUIZ" | "FINAL_QUIZ";
+  order:        number;
+  description?: string;
+  lessons?:     LessonDto[];
+  questions?:   QuestionDto[];
+}
+
+export interface CreateCourseDto {
+  title:           string;
+  description?:    string;
+  categoryId?:     string;
+  levelId?:        string;
+  /** Always normalised to this name after Zod transform — never validityPeriodId */
+  durationTypeId?: string;
+  status?:         CourseStatus;
+  createdBy?:      string;
+  thumbnailUrl?:   string;
+  gradeIds?:       string[];
+  modules?:        ModuleDto[];
+}
+
+export interface UpdateCourseDto {
+  title?:          string;
+  description?:    string;
+  categoryId?:     string;
+  levelId?:        string;
+  durationTypeId?: string;
+  status?:         CourseStatus;
+  createdBy?:      string;
+  thumbnailUrl?:   string;
+}
