@@ -244,213 +244,447 @@ function DeleteModal({ student, onCancel, onConfirm }) {
     </div>
   );
 }
-function FormModal({
-  mode,
-  formData,
-  setFormData,
-  onSave,
-  onClose,
-}: any) {
-  const [errors, setErrors] = useState<Record<string, string>>({});
+
+// ─── Form Modal ───────────────────────────────────────────────────────────────
+function FormModal({ mode, formData, setFormData, onSave, onClose }) {
+  const [errors, setErrors] = useState({});
   const [showPw, setShowPw] = useState(false);
   const [showCp, setShowCp] = useState(false);
-  const [saving, setSaving] = useState(false);
-
   const strength = pwStrength(formData.password);
 
-  const updateField = (key: string, val: any) => {
-    setFormData((p: any) => ({ ...p, [key]: val }));
-
-    setErrors((p) => {
-      const n = { ...p };
-      delete n[key];
-      return n;
-    });
-  };
+  const set = (key, val) => { setFormData(p => ({ ...p, [key]: val })); setErrors(p => { const n={...p}; delete n[key]; return n; }); };
 
   const validate = () => {
-    const errs: Record<string, string> = {};
-
-    if (!formData.name?.trim())
-      errs.name = "Student name is required";
-
-    if (!formData.email?.trim())
-      errs.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      errs.email = "Invalid email address";
-
-    if (!formData.phone?.trim())
-      errs.phone = "Phone is required";
-
-    if (!formData.dob)
-      errs.dob = "Date of birth is required";
-
-    if (!formData.parentName?.trim())
-      errs.parentName = "Parent name is required";
-
-    if (!formData.parentPhone?.trim())
-      errs.parentPhone = "Parent phone is required";
-
-    if (!formData.address?.trim())
-      errs.address = "Address is required";
-
+    const errs = {};
+    if (!formData.name.trim())       errs.name = "Student name is required";
+    if (!formData.email.trim())      errs.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errs.email = "Invalid email address";
+    if (!formData.phone.trim())      errs.phone = "Phone is required";
+    if (!formData.dob)               errs.dob = "Date of birth is required";
+    if (!formData.parentName.trim()) errs.parentName = "Parent name is required";
+    if (!formData.parentPhone.trim()) errs.parentPhone = "Parent phone is required";
+    if (!formData.address.trim())    errs.address = "Address is required";
     if (mode === "add") {
-      if (!formData.password)
-        errs.password = "Password is required";
-      else if (formData.password.length < 6)
-        errs.password = "Min 6 characters";
-
-      if (!formData.confirmPassword)
-        errs.confirmPassword = "Please confirm password";
-      else if (formData.password !== formData.confirmPassword)
-        errs.confirmPassword = "Passwords do not match";
+      if (!formData.password)             errs.password = "Password is required";
+      else if (formData.password.length < 6) errs.password = "Min 6 characters";
+      if (!formData.confirmPassword)      errs.confirmPassword = "Please confirm password";
+      else if (formData.password !== formData.confirmPassword) errs.confirmPassword = "Passwords do not match";
     } else if (formData.password) {
-      if (formData.password.length < 6)
-        errs.password = "Min 6 characters";
-
-      if (formData.password !== formData.confirmPassword)
-        errs.confirmPassword = "Passwords do not match";
+      if (formData.password.length < 6)  errs.password = "Min 6 characters";
+      if (formData.password !== formData.confirmPassword) errs.confirmPassword = "Passwords do not match";
     }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const submit = async () => {
-    if (!validate()) return;
-
-    setSaving(true);
-    try {
-      await onSave();
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ✅ FIXED INPUT STYLE (TS-safe)
-  const inp = (err?: string): React.CSSProperties => ({
-    width: "100%",
-    padding: "0.65rem 0.9rem",
-    background: "#0f1117",
-    border: `1px solid ${err ? "#7f1d1d" : "#2d3448"}`,
-    borderRadius: 9,
-    color: "#e2e8f0",
-    fontSize: "0.875rem",
-    outline: "none",
-    boxSizing: "border-box" as const,
-    fontFamily: "inherit",
-  });
-
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.72)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "1rem",
-        zIndex: 100,
-        backdropFilter: "blur(4px)",
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "#161b27",
-          border: "1px solid #2d3448",
-          borderRadius: 16,
-          width: "100%",
-          maxWidth: 700,
-          maxHeight: "90vh",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* HEADER */}
-        <div style={{ padding: "1.3rem 1.5rem" }}>
-          <h2 style={{ margin: 0 }}>
-            {mode === "add" ? "Add Student" : "Edit Student"}
-          </h2>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.72)", display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem", zIndex:100, backdropFilter:"blur(4px)", animation:"fadeIn 0.2s ease" }} onClick={onClose}>
+      <div style={{ background:"#161b27", border:"1px solid #2d3448", borderRadius:16, width:"100%", maxWidth:700, maxHeight:"90vh", overflowY:"auto", display:"flex", flexDirection:"column", boxShadow:"0 24px 80px rgba(0,0,0,0.6)", animation:"slideUp 0.25s ease" }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1.3rem 1.5rem", borderBottom:"1px solid #1e2535", background:"#131720", borderRadius:"16px 16px 0 0", flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ width:42, height:42, borderRadius:10, background:"rgba(99,153,34,0.12)", border:"1px solid rgba(99,153,34,0.25)", display:"flex", alignItems:"center", justifyContent:"center", color:"#c0dd97" }}><Ic.Cap /></div>
+            <div>
+              <h2 style={{ margin:"0 0 2px", fontSize:"1.05rem", fontWeight:700, color:"#f1f5f9" }}>{mode === "add" ? "Add New Student" : "Edit Student"}</h2>
+              <p style={{ margin:0, fontSize:"0.76rem", color:"#475569" }}>{mode === "add" ? "Register a new student profile" : "Update student information"}</p>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ width:32, height:32, borderRadius:8, border:"1px solid #2d3448", background:"transparent", color:"#64748b", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Ic.X /></button>
         </div>
 
-        {/* BODY */}
-        <div style={{ padding: "1.4rem 1.5rem", display: "flex", flexDirection: "column", gap: 14 }}>
-          
+        {/* Body */}
+        <div style={{ padding:"1.4rem 1.5rem", display:"flex", flexDirection:"column", gap:"1.1rem" }}>
+
+          {/* Name */}
           <Field label="Full Name" icon={<Ic.Person />} required error={errors.name}>
-            <input
-              value={formData.name}
-              onChange={(e) => updateField("name", e.target.value)}
-              placeholder="Student full name"
-              style={inp(errors.name)}
-            />
+            <input value={formData.name} onChange={e => set("name", e.target.value)} placeholder="Student full name" {...inp(errors.name)} />
           </Field>
 
-          <Field label="Email" icon={<Ic.Mail />} required error={errors.email}>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              style={inp(errors.email)}
-            />
+          {/* Email + Phone */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+            <Field label="Email" icon={<Ic.Mail />} required error={errors.email}>
+              <input type="email" value={formData.email} onChange={e => set("email", e.target.value)} placeholder="student@school.edu" {...inp(errors.email)} />
+            </Field>
+            <Field label="Phone" icon={<Ic.Phone />} required error={errors.phone}>
+              <input type="tel" value={formData.phone} onChange={e => set("phone", e.target.value)} placeholder="+1 (555) 000-0000" {...inp(errors.phone)} />
+            </Field>
+          </div>
+
+          {/* DOB + Gender */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+            <Field label="Date of Birth" icon={<Ic.Calendar />} required error={errors.dob}>
+              <input type="date" value={formData.dob} onChange={e => set("dob", e.target.value)} {...inp(errors.dob)} />
+            </Field>
+            <Field label="Gender" icon={<Ic.Gender />} required>
+              <Sel value={formData.gender} onChange={v => set("gender", v)} options={["Male","Female","Other"]} />
+            </Field>
+          </div>
+
+          {/* School + Grade + Section */}
+          <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr", gap:"1rem" }}>
+            <Field label="School" icon={<Ic.Building />} required>
+              <Sel value={formData.school} onChange={v => set("school", v)} options={["Lincoln High School","Tech Valley Academy","Riverside International","Central Academy","Horizon STEM School"]} />
+            </Field>
+            <Field label="Grade" icon={<Ic.Cap />} required>
+              <Sel value={formData.grade} onChange={v => set("grade", v)} options={GRADE_OPTS} />
+            </Field>
+            <Field label="Section" icon={<Ic.Section />} required>
+              <Sel value={formData.section} onChange={v => set("section", v)} options={SECTIONS} />
+            </Field>
+          </div>
+
+          {/* Parent info */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+            <Field label="Parent / Guardian Name" icon={<Ic.Person />} required error={errors.parentName}>
+              <input value={formData.parentName} onChange={e => set("parentName", e.target.value)} placeholder="Parent full name" {...inp(errors.parentName)} />
+            </Field>
+            <Field label="Parent Phone" icon={<Ic.Phone />} required error={errors.parentPhone}>
+              <input type="tel" value={formData.parentPhone} onChange={e => set("parentPhone", e.target.value)} placeholder="+1 (555) 000-0000" {...inp(errors.parentPhone)} />
+            </Field>
+          </div>
+
+          {/* Address */}
+          <Field label="Home Address" icon={<Ic.Home />} required error={errors.address}>
+            <textarea value={formData.address} onChange={e => set("address", e.target.value)} placeholder="Enter full home address" rows={2}
+              style={{ width:"100%", padding:"0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${errors.address ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", boxSizing:"border-box", fontFamily:"inherit", resize:"none", lineHeight:1.5 }} />
           </Field>
 
-          <Field label="Phone" icon={<Ic.Phone />} required error={errors.phone}>
-            <input
-              value={formData.phone}
-              onChange={(e) => updateField("phone", e.target.value)}
-              style={inp(errors.phone)}
-            />
-          </Field>
+          {/* GPA + Attendance */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+            <Field label="GPA Score (0–10)" icon={<Ic.Star />}>
+              <input type="number" value={formData.gpa} min="0" max="10" step="0.1"
+                onChange={e => set("gpa", Math.min(10, parseFloat(e.target.value)||0))} placeholder="0.0" {...inp()} />
+              {formData.gpa > 0 && (
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ flex:1, height:4, background:"#2d3448", borderRadius:2, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${(formData.gpa/10)*100}%`, background:`linear-gradient(90deg,${gpaColor(formData.gpa)}66,${gpaColor(formData.gpa)})`, borderRadius:2, transition:"width 0.3s" }} />
+                  </div>
+                  <span style={{ fontSize:"0.7rem", fontWeight:700, color:gpaColor(formData.gpa), minWidth:28 }}>{formData.gpa.toFixed(1)}</span>
+                </div>
+              )}
+            </Field>
+            <Field label="Attendance (%)" icon={<Ic.Heart />}>
+              <input type="number" value={formData.attendance} min="0" max="100"
+                onChange={e => set("attendance", Math.min(100, parseInt(e.target.value)||0))} placeholder="0" {...inp()} />
+              {formData.attendance > 0 && (
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ flex:1, height:4, background:"#2d3448", borderRadius:2, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${formData.attendance}%`, background:`linear-gradient(90deg,${attColor(formData.attendance)}66,${attColor(formData.attendance)})`, borderRadius:2, transition:"width 0.3s" }} />
+                  </div>
+                  <span style={{ fontSize:"0.7rem", fontWeight:700, color:attColor(formData.attendance), minWidth:28 }}>{formData.attendance}%</span>
+                </div>
+              )}
+            </Field>
+          </div>
 
-          <Field label="DOB" icon={<Ic.Calendar />} required error={errors.dob}>
-            <input
-              type="date"
-              value={formData.dob}
-              onChange={(e) => updateField("dob", e.target.value)}
-              style={inp(errors.dob)}
-            />
-          </Field>
+          {/* Password divider */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, margin:"0.2rem 0 -0.2rem" }}>
+            <div style={{ flex:1, height:1, background:"#1e2535" }} />
+            <span style={{ display:"flex", alignItems:"center", gap:6, fontSize:"0.7rem", fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:"0.08em", whiteSpace:"nowrap" }}>
+              <Ic.Lock />{mode === "add" ? "Set Password" : "Change Password"}
+              {mode === "edit" && <span style={{ fontSize:"0.65rem", color:"#3a4460", fontWeight:500, background:"#1a2030", border:"1px solid #2d3448", borderRadius:20, padding:"1px 7px", textTransform:"none" }}>optional</span>}
+            </span>
+            <div style={{ flex:1, height:1, background:"#1e2535" }} />
+          </div>
 
-          <Field label="Address" icon={<Ic.Home />} required error={errors.address}>
-            <textarea
-              value={formData.address}
-              onChange={(e) => updateField("address", e.target.value)}
-              style={inp(errors.address)}
-            />
-          </Field>
+          {/* Password row */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+            <Field label="Password" icon={<Ic.Lock />} required={mode === "add"} error={errors.password}>
+              <div style={{ position:"relative" }}>
+                <input type={showPw ? "text" : "password"} value={formData.password}
+                  onChange={e => set("password", e.target.value)}
+                  placeholder={mode === "add" ? "Min 6 characters" : "Leave blank to keep current"}
+                  style={{ width:"100%", padding:"0.65rem 2.6rem 0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${errors.password ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
+                <button type="button" onClick={() => setShowPw(v => !v)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"transparent", border:"none", color:"#475569", cursor:"pointer", display:"flex", padding:3 }}>
+                  {showPw ? <Ic.EyeOff /> : <Ic.Eye />}
+                </button>
+              </div>
+              {formData.password && (
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
+                  <div style={{ display:"flex", gap:4, flex:1 }}>
+                    {[1,2,3,4].map(lvl => (
+                      <div key={lvl} style={{ height:4, flex:1, borderRadius:2, background: lvl <= strength.level ? strength.color : "#2d3448", transition:"background 0.25s" }} />
+                    ))}
+                  </div>
+                  <span style={{ fontSize:"0.7rem", fontWeight:700, color:strength.color, minWidth:40 }}>{strength.label}</span>
+                </div>
+              )}
+            </Field>
+            <Field label="Confirm Password" icon={<Ic.Lock />} required={mode === "add"} error={errors.confirmPassword}>
+              <div style={{ position:"relative" }}>
+                <input type={showCp ? "text" : "password"} value={formData.confirmPassword}
+                  onChange={e => set("confirmPassword", e.target.value)}
+                  placeholder="Re-enter password"
+                  style={{ width:"100%", padding:"0.65rem 2.6rem 0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${errors.confirmPassword ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
+                <button type="button" onClick={() => setShowCp(v => !v)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"transparent", border:"none", color:"#475569", cursor:"pointer", display:"flex", padding:3 }}>
+                  {showCp ? <Ic.EyeOff /> : <Ic.Eye />}
+                </button>
+              </div>
+              {formData.confirmPassword && formData.password && (
+                <span style={{ fontSize:"0.72rem", fontWeight:600, color: formData.password === formData.confirmPassword ? "#c0dd97" : "#f87171" }}>
+                  {formData.password === formData.confirmPassword ? "✓ Passwords match" : "✗ Passwords do not match"}
+                </span>
+              )}
+            </Field>
+          </div>
 
-          {/* PASSWORD */}
-          <Field label="Password" icon={<Ic.Lock />} required={mode === "add"} error={errors.password}>
-            <input
-              type={showPw ? "text" : "password"}
-              value={formData.password}
-              onChange={(e) => updateField("password", e.target.value)}
-              style={inp(errors.password)}
-            />
-          </Field>
-
-          <Field label="Confirm Password" icon={<Ic.Lock />} required={mode === "add"} error={errors.confirmPassword}>
-            <input
-              type={showCp ? "text" : "password"}
-              value={formData.confirmPassword}
-              onChange={(e) => updateField("confirmPassword", e.target.value)}
-              style={inp(errors.confirmPassword)}
-            />
-          </Field>
+          {/* Status toggle */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }} onClick={() => set("status", formData.status === "active" ? "inactive" : "active")}>
+            <div style={{ width:44, height:24, borderRadius:12, background: formData.status === "active" ? "rgba(99,153,34,0.25)" : "#2d3448", border:`1px solid ${formData.status === "active" ? "rgba(99,153,34,0.5)" : "#3d4860"}`, position:"relative", transition:"all 0.2s", flexShrink:0 }}>
+              <div style={{ position:"absolute", top:3, left: formData.status === "active" ? 22 : 3, width:16, height:16, borderRadius:8, background: formData.status === "active" ? "#c0dd97" : "#64748b", transition:"left 0.2s" }} />
+            </div>
+            <span style={{ fontSize:"0.855rem", color:"#94a3b8" }}>Student is <strong style={{ color:"#e2e8f0" }}>{formData.status === "active" ? "Active" : "Inactive"}</strong></span>
+            {formData.status === "active" && <span style={{ width:8, height:8, borderRadius:"50%", background:"#639922", boxShadow:"0 0 6px rgba(99,153,34,0.6)", display:"inline-block" }} />}
+          </div>
         </div>
 
-        {/* FOOTER */}
-        <div style={{ padding: "1rem 1.5rem", display: "flex", justifyContent: "flex-end", gap: 10 }}>
-          <button onClick={onClose}>Cancel</button>
-          <button onClick={submit} disabled={saving}>
-            {saving ? "Saving..." : mode === "add" ? "Add" : "Save"}
+        {/* Footer */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:10, padding:"1rem 1.5rem", borderTop:"1px solid #1e2535", background:"#131720", borderRadius:"0 0 16px 16px", flexShrink:0 }}>
+          <button onClick={onClose} style={{ padding:"0.55rem 1.2rem", background:"transparent", border:"1px solid #2d3448", borderRadius:9, color:"#94a3b8", fontSize:"0.875rem", fontWeight:500, cursor:"pointer" }}>Cancel</button>
+          <button onClick={() => { if(validate()) onSave(); }}
+            style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"0.58rem 1.3rem", background:"#3b6d11", border:"1px solid #639922", borderRadius:9, color:"#c0dd97", fontSize:"0.875rem", fontWeight:600, cursor:"pointer" }}>
+            <Ic.Save />{mode === "add" ? "Add Student" : "Save Changes"}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+export default function StudentsManagement() {
+  const [students, setStudents] = useState(INITIAL_STUDENTS);
+  const [search, setSearch]     = useState("");
+  const [grade, setGrade]       = useState("All Grades");
+  const [gender, setGender]     = useState("All Genders");
+  const [status, setStatus]     = useState("All Status");
+  const [school, setSchool]     = useState("All Schools");
+  const [toast, setToast]       = useState("");
+  const [viewIdx, setViewIdx]   = useState(null);
+  const [delStudent, setDelStudent] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState("add");
+  const [editId, setEditId]     = useState(null);
+  const [formData, setFormData] = useState(defaultForm);
+  const nextId = useRef(INITIAL_STUDENTS.length + 1);
+
+  const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3000); };
+
+  const filtered = students.filter(s => {
+    const q = search.toLowerCase();
+    return (!q || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || s.school.toLowerCase().includes(q))
+      && (grade  === "All Grades"  || s.grade  === grade)
+      && (gender === "All Genders" || s.gender === gender)
+      && (status === "All Status"  || (s.status === "active" ? "Active" : "Inactive") === status)
+      && (school === "All Schools" || s.school === school);
+  });
+
+  const stats = {
+    total:    students.length,
+    active:   students.filter(s => s.status === "active").length,
+    avgGpa:   (students.reduce((a,s) => a+s.gpa, 0) / (students.length||1)).toFixed(1),
+    avgAtt:   Math.round(students.reduce((a,s) => a+s.attendance, 0) / (students.length||1)),
+  };
+
+  const openAdd = () => { setFormData(defaultForm); setFormMode("add"); setEditId(null); setFormOpen(true); };
+  const openEdit = s => {
+    setFormData({ name:s.name, email:s.email, phone:s.phone, dob:s.dob, gender:s.gender, grade:s.grade, section:s.section, school:s.school, parentName:s.parentName, parentPhone:s.parentPhone, address:s.address, gpa:s.gpa, attendance:s.attendance, status:s.status, password:"", confirmPassword:"" });
+    setFormMode("edit"); setEditId(s.id); setFormOpen(true);
+  };
+
+  const handleSave = () => {
+    if (formMode === "add") {
+      const id = `std${String(nextId.current++).padStart(3,"0")}`;
+      setStudents(p => [...p, { ...formData, id, enrolled: new Date().toISOString().slice(0,10), subjects:[] }]);
+      showToast("Student added successfully");
+    } else {
+      setStudents(p => p.map(s => s.id === editId ? { ...s, ...formData } : s));
+      showToast("Student updated successfully");
+    }
+    setFormOpen(false);
+  };
+
+  const handleDelete = () => {
+    setStudents(p => p.filter(s => s.id !== delStudent.id));
+    setDelStudent(null);
+    showToast("Student deleted successfully");
+  };
+
+  return (
+    <div style={{ padding:"2rem 2.5rem", minHeight:"100vh", background:"#0f1117", color:"#e2e8f0", fontFamily:"'DM Sans','Segoe UI',sans-serif" }}>
+      <style>{`
+        @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        * { box-sizing:border-box; }
+        input::placeholder, textarea::placeholder { color:#3a4460; }
+        select option { background:#161b27; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.5); cursor:pointer; }
+        ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:#2d3448;border-radius:4px}
+        .row-hover:hover { background:rgba(99,153,34,0.04) !important; }
+        .stat-card:hover { transform:translateY(-2px); }
+        .add-btn:hover { background:#27500a !important; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"1.5rem", flexWrap:"wrap", gap:"1rem" }}>
+        <div>
+          <h1 style={{ margin:"0 0 3px", fontSize:"1.6rem", fontWeight:700, color:"#f1f5f9", letterSpacing:"-0.4px" }}>Students Management</h1>
+          <p style={{ margin:0, fontSize:"0.83rem", color:"#64748b" }}>Manage student profiles, academics, and attendance</p>
+        </div>
+        <button className="add-btn" onClick={openAdd}
+          style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"0.58rem 1.2rem", background:"#3b6d11", border:"1px solid #639922", borderRadius:9, color:"#c0dd97", fontSize:"0.875rem", fontWeight:600, cursor:"pointer", transition:"background 0.15s", whiteSpace:"nowrap" }}>
+          <Ic.Plus /> Add New Student
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:"1.5rem" }}>
+        {[
+          { label:"Total Students", value:stats.total,        color:"#7dd3fc", bg:"rgba(55,138,221,0.08)",  icon:<Ic.Users /> },
+          { label:"Active Students",value:stats.active,       color:"#c0dd97", bg:"rgba(99,153,34,0.08)",   icon:<Ic.Check /> },
+          { label:"Average GPA",    value:`${stats.avgGpa}/10`, color:"#fbbf24", bg:"rgba(245,158,11,0.08)", icon:<Ic.Star /> },
+          { label:"Avg Attendance", value:`${stats.avgAtt}%`, color:"#60a5fa", bg:"rgba(59,130,246,0.08)",  icon:<Ic.Trend /> },
+        ].map(s => (
+          <div key={s.label} className="stat-card" style={{ background:"#161b27", border:"1px solid #2d3448", borderRadius:12, padding:"1.1rem 1.2rem", transition:"transform 0.15s" }}>
+            <div style={{ width:38, height:38, borderRadius:9, background:s.bg, color:s.color, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:10 }}>{s.icon}</div>
+            <div style={{ fontSize:"1.55rem", fontWeight:700, lineHeight:1, marginBottom:4, color:s.color }}>{s.value}</div>
+            <div style={{ fontSize:"0.75rem", color:"#64748b", fontWeight:500 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div style={{ background:"#161b27", border:"1px solid #2d3448", borderRadius:12, padding:"1rem 1.2rem", display:"flex", alignItems:"center", gap:10, marginBottom:"1.5rem", flexWrap:"wrap" }}>
+        <div style={{ position:"relative", flex:1, minWidth:200, display:"flex", alignItems:"center" }}>
+          <span style={{ position:"absolute", left:12, pointerEvents:"none" }}><Ic.Search /></span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, email or school…"
+            style={{ width:"100%", padding:"0.55rem 2.4rem 0.55rem 2.5rem", background:"#0f1117", border:"1px solid #2d3448", borderRadius:9, color:"#e2e8f0", fontSize:"0.855rem", outline:"none", fontFamily:"inherit" }} />
+          {search && <button onClick={() => setSearch("")} style={{ position:"absolute", right:10, background:"transparent", border:"none", color:"#64748b", cursor:"pointer", display:"flex", padding:2, borderRadius:4 }}><Ic.X /></button>}
+        </div>
+        {[
+          { val:grade,  set:setGrade,  opts:GRADES },
+          { val:gender, set:setGender, opts:GENDERS },
+          { val:status, set:setStatus, opts:STATUSES },
+          { val:school, set:setSchool, opts:SCHOOLS },
+        ].map((sel,i) => (
+          <div key={i} style={{ position:"relative" }}>
+            <select value={sel.val} onChange={e => sel.set(e.target.value)}
+              style={{ padding:"0.55rem 2rem 0.55rem 0.85rem", background:"#0f1117", border:"1px solid #2d3448", borderRadius:9, color:"#94a3b8", fontSize:"0.82rem", outline:"none", cursor:"pointer", appearance:"none", fontFamily:"inherit", minWidth:130 }}>
+              {sel.opts.map(o => <option key={o}>{o}</option>)}
+            </select>
+            <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", color:"#475569", pointerEvents:"none", fontSize:"0.7rem" }}>▾</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div style={{ background:"#161b27", border:"1px solid #2d3448", borderRadius:12, overflow:"hidden" }}>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.83rem" }}>
+            <thead>
+              <tr style={{ borderBottom:"1px solid #2d3448" }}>
+                {["Student","Contact","School · Grade","GPA","Attendance","Status","Actions"].map(h => (
+                  <th key={h} style={{ padding:"0.85rem 1rem", textAlign:"left", color:"#64748b", fontWeight:600, fontSize:"0.74rem", letterSpacing:"0.05em", textTransform:"uppercase", whiteSpace:"nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding:"4rem 1rem", textAlign:"center" }}>
+                  <p style={{ margin:"0 0 6px", fontSize:"1rem", fontWeight:600, color:"#475569" }}>No students found</p>
+                  <p style={{ margin:"0 0 1.2rem", fontSize:"0.83rem", color:"#3a4460" }}>Try adjusting your filters or search terms</p>
+                  <button onClick={() => { setSearch(""); setGrade("All Grades"); setGender("All Genders"); setStatus("All Status"); setSchool("All Schools"); }}
+                    style={{ padding:"0.5rem 1.1rem", background:"transparent", border:"1px solid #2d3448", borderRadius:8, color:"#64748b", fontSize:"0.875rem", cursor:"pointer", fontFamily:"inherit" }}>Clear filters</button>
+                </td></tr>
+              ) : filtered.map((s, idx) => {
+                const av = AVATAR_PALETTE[idx % AVATAR_PALETTE.length];
+                const gc = gpaColor(s.gpa), ac = attColor(s.attendance);
+                return (
+                  <tr key={s.id} className="row-hover" style={{ borderBottom:"1px solid rgba(45,52,72,0.5)", transition:"background 0.12s" }}>
+                    {/* Student */}
+                    <td style={{ padding:"0.9rem 1rem" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <div style={{ width:40, height:40, borderRadius:11, background:av.bg, color:av.fg, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:"0.88rem", flexShrink:0 }}>{initials(s.name)}</div>
+                        <div>
+                          <div style={{ fontWeight:600, color:"#f1f5f9", fontSize:"0.88rem" }}>{s.name}</div>
+                          <div style={{ fontSize:"0.72rem", color:"#3a4460" }}>{s.id} · {s.gender}</div>
+                        </div>
+                      </div>
+                    </td>
+                    {/* Contact */}
+                    <td style={{ padding:"0.9rem 1rem" }}>
+                      <div style={{ fontWeight:500, color:"#e2e8f0", fontSize:"0.84rem" }}>{s.email}</div>
+                      <div style={{ fontSize:"0.72rem", color:"#475569" }}>{s.phone}</div>
+                    </td>
+                    {/* School · Grade */}
+                    <td style={{ padding:"0.9rem 1rem" }}>
+                      <div style={{ color:"#e2e8f0", fontWeight:500, fontSize:"0.84rem", maxWidth:180, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.school}</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:2 }}>
+                        <span style={{ fontSize:"0.72rem", color:"#64748b" }}>{s.grade}</span>
+                        <span style={{ padding:"1px 7px", background:"rgba(99,153,34,0.1)", border:"1px solid rgba(99,153,34,0.2)", borderRadius:20, fontSize:"0.68rem", fontWeight:600, color:"#c0dd97" }}>Sec {s.section}</span>
+                      </div>
+                    </td>
+                    {/* GPA */}
+                    <td style={{ padding:"0.9rem 1rem" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, minWidth:100 }}>
+                        <div style={{ flex:1, height:6, background:"#2d3448", borderRadius:3, overflow:"hidden" }}>
+                          <div style={{ height:"100%", width:`${(s.gpa/10)*100}%`, background:`linear-gradient(90deg,${gc}66,${gc})`, borderRadius:3 }} />
+                        </div>
+                        <span style={{ fontSize:"0.8rem", fontWeight:700, color:gc, minWidth:28 }}>{s.gpa.toFixed(1)}</span>
+                      </div>
+                    </td>
+                    {/* Attendance */}
+                    <td style={{ padding:"0.9rem 1rem" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, minWidth:100 }}>
+                        <div style={{ flex:1, height:6, background:"#2d3448", borderRadius:3, overflow:"hidden" }}>
+                          <div style={{ height:"100%", width:`${s.attendance}%`, background:`linear-gradient(90deg,${ac}66,${ac})`, borderRadius:3 }} />
+                        </div>
+                        <span style={{ fontSize:"0.8rem", fontWeight:700, color:ac, minWidth:34 }}>{s.attendance}%</span>
+                      </div>
+                    </td>
+                    {/* Status */}
+                    <td style={{ padding:"0.9rem 1rem" }}>
+                      <div style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:"0.82rem", fontWeight:500, color: s.status === "active" ? "#c0dd97" : "#64748b" }}>
+                        <span style={{ width:8, height:8, borderRadius:"50%", background: s.status === "active" ? "#639922" : "#64748b", boxShadow: s.status === "active" ? "0 0 5px rgba(99,153,34,0.5)" : "none" }} />
+                        {s.status === "active" ? "Active" : "Inactive"}
+                      </div>
+                    </td>
+                    {/* Actions */}
+                    <td style={{ padding:"0.9rem 1rem" }}>
+                      <div style={{ display:"flex", gap:5 }}>
+                        {[
+                          { title:"View",   color:"#7dd3fc", hbg:"#0c1a2e", onClick:()=>setViewIdx(idx),        icon:<Ic.Eye /> },
+                          { title:"Edit",   color:"#c0dd97", hbg:"rgba(99,153,34,0.1)", onClick:()=>openEdit(s), icon:<Ic.Edit /> },
+                          { title:"Delete", color:"#f87171", hbg:"#2a0d0d", onClick:()=>setDelStudent(s),        icon:<Ic.Trash /> },
+                        ].map(btn => (
+                          <button key={btn.title} title={btn.title} onClick={btn.onClick}
+                            style={{ width:30, height:30, borderRadius:8, border:"1px solid #2d3448", background:"transparent", cursor:"pointer", display:"inline-flex", alignItems:"center", justifyContent:"center", padding:0, color:btn.color, transition:"background 0.12s" }}
+                            onMouseEnter={e => e.currentTarget.style.background=btn.hbg}
+                            onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                            {btn.icon}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {filtered.length > 0 && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"0.9rem 1.2rem", borderTop:"1px solid #2d3448" }}>
+            <span style={{ fontSize:"0.78rem", color:"#475569" }}>Showing <strong style={{ color:"#64748b" }}>{filtered.length}</strong> of <strong style={{ color:"#64748b" }}>{students.length}</strong> student{students.length !== 1 ? "s" : ""}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {viewIdx !== null && filtered[viewIdx] && <ViewModal student={filtered[viewIdx]} idx={viewIdx} onClose={() => setViewIdx(null)} />}
+      {delStudent && <DeleteModal student={delStudent} onCancel={() => setDelStudent(null)} onConfirm={handleDelete} />}
+      {formOpen && <FormModal mode={formMode} formData={formData} setFormData={setFormData} onSave={handleSave} onClose={() => setFormOpen(false)} />}
+      <Toast msg={toast} />
     </div>
   );
 }
