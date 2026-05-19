@@ -264,7 +264,8 @@ export default function CourseEditPage() {
   const [thumbnailPreview, setThumbnailPreview]         = useState("");
   const thumbnailInputRef = useRef(null);
 
-  const [errors,         setErrors]         = useState({});
+  //const [errors,         setErrors]         = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [modules,        setModules]        = useState([]);
   const [savedModuleIds, setSavedModuleIds] = useState([]);
   const [schedule,       setSchedule]       = useState({ dripContent: true, startDate: today, releaseIntervalDays: 7 });
