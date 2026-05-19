@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStudentFromToken } from "@/lib/auth/student-auth";
+import { getStudentFromToken } from "app/api/auth/student-auth";
 
 export async function GET(request: NextRequest) {
   try {
