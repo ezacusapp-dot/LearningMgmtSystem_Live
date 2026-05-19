@@ -1,13 +1,11 @@
-// app/api/courses/[courseId]/details/route.ts
-
+import { NextRequest } from "next/server";
 import { getCourseForEditController } from "@/modules/courses/courses.controller";
 
 export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ courseId: string }> }
+  _req: NextRequest,
+  context: { params: Promise<{ courseId: string }> }
 ) {
-  const { courseId } = await params;
+  const { courseId } = await context.params;
+
   return getCourseForEditController(courseId);
-  // Returns: course + grades[] + modules[] with lessons, revision/contents,
-  //          quiz/questions/options — all nested, ordered by `order` field
 }
