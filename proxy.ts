@@ -1,42 +1,5 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import { verifyToken } from "./lib/paseto";
-
-// export async function proxy(req: NextRequest) {
-//   // Only protect specific routes
-//   if (!req.nextUrl.pathname.startsWith("/api/protected/")) {
-//     return NextResponse.next();
-//   }
-
-//   const authHeader = req.headers.get("authorization");
-
-//   if (!authHeader) {
-//     return NextResponse.json(
-//       { message: "Unauthorized" },
-//       { status: 401 }
-//     );
-//   }
-
-//   const token = authHeader.split(" ")[1];
-
-//   try {
-//     await verifyToken(token);
-//     return NextResponse.next();
-//   } catch (err) {
-//     return NextResponse.json(
-//       { message: "Invalid token" },
-//       { status: 401 }
-//     );
-//   }
-// }
-
-// // ✅ VERY IMPORTANT (Route matching)
-// export const config = {
-//   matcher: ["/api/protected/:path*"],
-// };
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "./lib/paseto";
-
-//export const runtime = "nodejs"; 
 
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
@@ -50,16 +13,44 @@ export async function proxy(req: NextRequest) {
     }
 
     try {
-      await verifyToken(token);
+      const payload = await verifyToken(token);
+      
+      // ✅ Check for both ADMIN and SUPER_ADMIN
+      const userRole = payload.role?.toUpperCase();
+      if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      }
+      
+      return NextResponse.next();
     } catch {
       return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+
+  // 🔐 Protect student routes
+  if (path.startsWith("/student")) {
+    const token = req.cookies.get("token")?.value;
+
+    if (!token) {
+      return NextResponse.redirect(new URL("/student_login", req.url));
+    }
+
+    try {
+      const payload = await verifyToken(token);
+      
+      if (payload.role?.toUpperCase() !== "STUDENT") {
+        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      }
+      
+      return NextResponse.next();
+    } catch {
+      return NextResponse.redirect(new URL("/student_login", req.url));
     }
   }
 
   return NextResponse.next();
 }
 
-// ✅ Route matcher
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/student/:path*"],
 };

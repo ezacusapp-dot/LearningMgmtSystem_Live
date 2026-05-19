@@ -1,32 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type User = {
-    id: number;
-    name: string;
-    email: string;
-    token: string;
-    role: string;
-};
-
-type Tenant = Record<string, unknown>;
+interface User {
+   id?: number | string;
+  name?: string;
+  email?: string;
+  role?: string;
+}
 
 interface AuthState {
   token: string | null;
-  name: string | null;
-  email: string | null;
-  role: string | null;
-
-  hasHydrated: boolean;
-  setHasHydrated: (value: boolean) => void;
-
-  login: (data: {
-    token: string;
-    name: string;
-    email: string;
-    role: string;
-  }) => void;
-
+  user: User | null;
+  isAuthenticated: boolean;
+  
+  login: (data: { token: string; role?: string; name?: string; email?: string; id?: number }) => void;
   logout: () => void;
 }
 
@@ -34,46 +21,43 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
-      name: null,
-      email: null,
-      role: null,
+      user: null,
+      isAuthenticated: false,
 
-      hasHydrated: false,
-      setHasHydrated: (value) => set({ hasHydrated: value }),
-
-      login: ({ token, name, email, role }) => {
-        // ✅ Save token in cookie
-        if (typeof document !== "undefined") {
-          document.cookie = `auth-token=${token}; path=/; max-age=${7 * 24 * 60 * 60}`;
-        }
-
+      login: (data) => {
         set({
-          token,
-          name,
-          email,
-          role,
+          token: data.token,
+          user: {
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            role: data.role,
+          },
+          isAuthenticated: true,
         });
+        
+        // Store in localStorage for persistence
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userRole", data.role || "");
+        localStorage.setItem("userId", String(data.id || ""));
+        localStorage.setItem("userName", data.name || "");
+        localStorage.setItem("userEmail", data.email || "");
       },
 
       logout: () => {
-        if (typeof document !== "undefined") {
-          document.cookie = "auth-token=; path=/; max-age=0";
-        }
-
+        localStorage.clear();
+        sessionStorage.clear();
+        
         set({
           token: null,
-          name: null,
-          email: null,
-          role: null,
+          user: null,
+          isAuthenticated: false,
         });
       },
     }),
-    
     {
       name: "auth-storage",
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
-      },
+      getStorage: () => localStorage,
     }
   )
 );
