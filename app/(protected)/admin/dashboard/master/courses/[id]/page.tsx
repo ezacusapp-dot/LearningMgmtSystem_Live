@@ -332,20 +332,55 @@ export default function CourseEditPage() {
   const confirmDelete = (msg, onConfirm) => setDelModal({ msg, onConfirm });
 
   // ── Validation — identical to create page ──────────────────────────────────
+  // const validateStep1 = () => {
+  //   const e = {};
+  //   if (!form.title.trim())           e.title       = "Title is required";
+  //   if (!form.categoryId)             e.categoryId  = "Category is required";
+  //   if (!form.levelId)                e.levelId     = "Level is required";
+  //   if (!form.durationId)             e.durationId  = "Duration is required";
+  //   if (form.gradeIds.length === 0)   e.gradeIds    = "At least one grade is required";
+  //   if (!form.description.trim())     e.description = "Description is required";
+  //   if (!form.thumbnailFile && !existingThumbnailUrl) e.thumbnail = "Thumbnail is required";
+  //   if (!form.createdBy.trim())       e.createdBy   = "Created By is required";
+  //   if (!form.status)                 e.status      = "Status is required";
+  //   setErrors(e);
+  //   return Object.keys(e).length === 0;
+  // };
+
   const validateStep1 = () => {
-    const e = {};
-    if (!form.title.trim())           e.title       = "Title is required";
-    if (!form.categoryId)             e.categoryId  = "Category is required";
-    if (!form.levelId)                e.levelId     = "Level is required";
-    if (!form.durationId)             e.durationId  = "Duration is required";
-    if (form.gradeIds.length === 0)   e.gradeIds    = "At least one grade is required";
-    if (!form.description.trim())     e.description = "Description is required";
-    if (!form.thumbnailFile && !existingThumbnailUrl) e.thumbnail = "Thumbnail is required";
-    if (!form.createdBy.trim())       e.createdBy   = "Created By is required";
-    if (!form.status)                 e.status      = "Status is required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
+  const e: Record<string, string> = {};
+
+  if (!form.title.trim())
+    e.title = "Title is required";
+
+  if (!form.categoryId)
+    e.categoryId = "Category is required";
+
+  if (!form.levelId)
+    e.levelId = "Level is required";
+
+  if (!form.durationId)
+    e.durationId = "Duration is required";
+
+  if (form.gradeIds.length === 0)
+    e.gradeIds = "At least one grade is required";
+
+  if (!form.description.trim())
+    e.description = "Description is required";
+
+  if (!form.thumbnailFile && !existingThumbnailUrl)
+    e.thumbnail = "Thumbnail is required";
+
+  if (!form.createdBy.trim())
+    e.createdBy = "Created By is required";
+
+  if (!form.status)
+    e.status = "Status is required";
+
+  setErrors(e);
+
+  return Object.keys(e).length === 0;
+};
 
   const clearError = field => setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
 
