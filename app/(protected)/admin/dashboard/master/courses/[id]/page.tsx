@@ -391,7 +391,13 @@ export default function CourseEditPage() {
     setForm(prev => ({ ...prev, thumbnailFile: file, thumbnailName: file.name }));
     clearError("thumbnail");
     const reader = new FileReader();
-    reader.onload = ev => setThumbnailPreview(ev.target?.result ?? "");
+reader.onload = (ev) => {
+  const result = ev.target?.result;
+
+  if (typeof result === "string") {
+    setThumbnailPreview(result);
+  }
+};
     reader.readAsDataURL(file);
   };
 
