@@ -120,7 +120,7 @@ export default function SchoolLayout({
   const [activeLabel, setActiveLabel] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const role = useAuthStore((s) => s.role);
+  const role = useAuthStore((s) => s.user?.role);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
 
   // ── Sync active label with pathname ──────────────────────
