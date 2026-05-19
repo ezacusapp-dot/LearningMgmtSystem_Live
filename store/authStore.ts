@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface User {
-   id?: number | string;
+  id?: number | string;
   name?: string;
   email?: string;
   role?: string;
@@ -12,9 +12,19 @@ interface AuthState {
   token: string | null;
   user: User | null;
   isAuthenticated: boolean;
-  
-  login: (data: { token: string; role?: string; name?: string; email?: string; id?: number }) => void;
+  hasHydrated: boolean;
+
+  login: (data: {
+    token: string;
+    role?: string;
+    name?: string;
+    email?: string;
+    id?: number;
+  }) => void;
+
   logout: () => void;
+
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
       isAuthenticated: false,
+      hasHydrated: false,
 
       login: (data) => {
         set({
@@ -35,8 +46,7 @@ export const useAuthStore = create<AuthState>()(
           },
           isAuthenticated: true,
         });
-        
-        // Store in localStorage for persistence
+
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userRole", data.role || "");
         localStorage.setItem("userId", String(data.id || ""));
@@ -47,17 +57,24 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.clear();
         sessionStorage.clear();
-        
+
         set({
           token: null,
           user: null,
           isAuthenticated: false,
         });
       },
+
+      setHasHydrated: (state) => {
+        set({ hasHydrated: state });
+      },
     }),
     {
       name: "auth-storage",
-      getStorage: () => localStorage,
+
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

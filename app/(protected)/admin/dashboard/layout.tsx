@@ -17,7 +17,7 @@ export default function DashboardLayout({
   const [collapsed,   setCollapsed]   = useState(false);
   const [activeLabel, setActiveLabel] = useState("");
 
-  const role        = useAuthStore((s) => s.role);
+  const role        = useAuthStore((s) => s.user?.role);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
 
   // ── Sync active label with pathname ──────────────────────
