@@ -1,9 +1,11 @@
+import { NextRequest } from "next/server";
 import { getCourseForEditController } from "@/modules/courses/courses.controller";
 
 export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  const { id } = await context.params;
+
   return getCourseForEditController(id);
 }
