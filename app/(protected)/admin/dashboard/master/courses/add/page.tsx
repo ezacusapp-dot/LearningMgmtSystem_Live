@@ -411,22 +411,44 @@ export default function CourseBuilderPage() {
   const thumbnailInputRef = useRef(null);
 
   // ── Validation errors ──────────────────────────────────────────────────────
-  const [errors, setErrors] = useState({});
+const [errors, setErrors] = useState<Record<string, string>>({});
+
 const [durationTypes, setDurationTypes] = useState([]);
-  const validateStep1 = () => {
-    const e = {};
-    if (!form.title.trim())       e.title       = "Title is required";
-    if (!form.categoryId)         e.categoryId  = "Category is required";
-    if (!form.levelId)            e.levelId     = "Level is required";
-    if (!form.durationId)         e.durationId  = "Duration is required"; 
-    if (form.gradeIds.length === 0) e.gradeIds  = "At least one grade is required";
-    if (!form.description.trim()) e.description = "Description is required";
-    if (!form.thumbnailFile)      e.thumbnail   = "Thumbnail is required";
-    if (!form.createdBy.trim())   e.createdBy   = "Created By is required";
-    if (!form.status)             e.status      = "Status is required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
+
+const validateStep1 = () => {
+  const e: Record<string, string> = {};
+
+  if (!form.title.trim())
+    e.title = "Title is required";
+
+  if (!form.categoryId)
+    e.categoryId = "Category is required";
+
+  if (!form.levelId)
+    e.levelId = "Level is required";
+
+  if (!form.durationId)
+    e.durationId = "Duration is required";
+
+  if (form.gradeIds.length === 0)
+    e.gradeIds = "At least one grade is required";
+
+  if (!form.description.trim())
+    e.description = "Description is required";
+
+  if (!form.thumbnailFile)
+    e.thumbnail = "Thumbnail is required";
+
+  if (!form.createdBy.trim())
+    e.createdBy = "Created By is required";
+
+  if (!form.status)
+    e.status = "Status is required";
+
+  setErrors(e);
+
+  return Object.keys(e).length === 0;
+};
 
   const clearError = (field) => setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
 
@@ -488,7 +510,13 @@ const [durationTypes, setDurationTypes] = useState([]);
     setForm(prev => ({ ...prev, thumbnailFile: file, thumbnailName: file.name }));
     clearError("thumbnail");
     const reader = new FileReader();
-    reader.onload = ev => setThumbnailPreview(ev.target?.result ?? "");
+reader.onload = (ev) => {
+  const result = ev.target?.result;
+
+  if (typeof result === "string") {
+    setThumbnailPreview(result);
+  }
+};
     reader.readAsDataURL(file);
   };
   const removeThumbnail = () => {
