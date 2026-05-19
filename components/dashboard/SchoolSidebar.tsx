@@ -51,6 +51,9 @@ const SETTINGS_NAV: NavItem[] = [
 
 type SidebarProps = {
   collapsed: boolean;
+  activeLabel: string;
+  onNavChange: (label: string) => void;
+  onToggle: () => void;
 };
 
 export default function SchoolSidebar({ collapsed }: SidebarProps) {

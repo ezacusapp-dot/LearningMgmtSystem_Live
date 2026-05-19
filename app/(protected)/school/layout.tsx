@@ -186,6 +186,8 @@ export default function SchoolLayout({
     );
   }
 
+ 
+
   return (
     /*
      * ROOT: h-screen + overflow-hidden
@@ -205,6 +207,8 @@ export default function SchoolLayout({
            flex-shrink-0 is set inside Sidebar itself.
            It is always full height because it uses h-screen.
       ─────────────────────────────────────────────────────── */}
+
+      
       <SchoolSidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(!collapsed)}
