@@ -1,3 +1,5 @@
+import { NextRequest } from "next/server";
+
 import {
   updateStudentController,
   deleteStudentController,
@@ -5,10 +7,10 @@ import {
 
 // ✅ PUT
 export async function PUT(
-  req: Request,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await context.params; // ✅ FIX
+  const { id } = await context.params;
 
   console.log("PUT ID:", id);
 
@@ -17,10 +19,10 @@ export async function PUT(
 
 // ✅ DELETE
 export async function DELETE(
-  req: Request,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await context.params; // ✅ FIX
+  const { id } = await context.params;
 
   console.log("DELETE ID:", id);
 
