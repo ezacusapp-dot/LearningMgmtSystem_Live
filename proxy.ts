@@ -78,11 +78,11 @@ const userRole = payload.role?.toUpperCase();
     }
 
     try {
-      const payload = await verifyToken(token);
+     const payload = (await verifyToken(token)) as {
+  role?: string;
+};
 
-      if (
-        payload.role?.toUpperCase() !== "STUDENT"
-      ) {
+if (payload.role?.toUpperCase() !== "STUDENT") {
         return NextResponse.redirect(
           new URL("/unauthorized", req.url)
         );
