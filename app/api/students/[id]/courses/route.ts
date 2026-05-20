@@ -17,12 +17,11 @@ async function getUserFromToken(req: NextRequest) {
     const payload = await verifyToken(token);
     if (!payload || !payload.id) return null;
     
-     // const studentId = typeof payload.id === 'number' ? payload.id : parseInt(payload.id);
+   // const studentId = typeof payload.id === 'number' ? payload.id : parseInt(payload.id);
       const studentId =
   typeof payload.id === "number"
     ? payload.id
     : parseInt(String(payload.id));
-    
     // Get or create User record for this student
     let user = await prisma.user.findFirst({
       where: {
@@ -37,7 +36,11 @@ async function getUserFromToken(req: NextRequest) {
       user = await prisma.user.create({
         data: {
           name: `${payload.firstName} ${payload.lastName}`,
-          email: payload.studentEmail || `${payload.username}@student.local`,
+          //email: payload.studentEmail || `${payload.username}@student.local`,
+          email:
+  typeof payload.studentEmail === "string" && payload.studentEmail
+    ? payload.studentEmail
+    : `${String(payload.username)}@student.local`,
           password: `STUDENT_${studentId}`,
           role: "STUDENT",
           isActive: true,
@@ -192,6 +195,7 @@ export async function GET(
         userId: user.id,
       },
       select: {
+        id: true,
         courseId: true,
         startDate: true,
         endDate: true,
