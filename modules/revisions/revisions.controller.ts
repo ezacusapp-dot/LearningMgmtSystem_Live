@@ -135,12 +135,19 @@ export const addRevisionContentController = async (
     const body = await req.json();
 
     // Inline validate single content item
-    const { z } = await import("zod");
-    const schema = z.object({
-      contentType: z.enum(["VIDEO", "PDF"]),
-      fileUrl: z.string().min(1, "File URL is required"),
-      order: z.number({ required_error: "Order is required" }),
-    });
+     const { z } = await import("zod");
+
+const schema = z.object({
+  contentType: z.enum(["VIDEO", "PDF"]),
+
+  fileUrl: z.string().min(1, {
+    message: "File URL is required",
+  }),
+
+  order: z.coerce.number().min(1, {
+    message: "Order is required",
+  }),
+});
 
     const validated = schema.parse(body);
     const data = await addRevisionContentService(revisionId, validated);
