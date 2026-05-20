@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/paseto";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { excludePassword } from "@/lib/utils"; // Create this helper
+//import { excludePassword } from "@/lib/utils"; // Create this helper
 
 export const runtime = "nodejs";
 
