@@ -42,7 +42,7 @@ function SchoolLoginForm() {
         name: json.school.adminName,
         email: json.school.adminEmail,
         role: json.role,
-        schoolData: json.school,
+        //schoolData: json.school,
       });
 
       // Store in localStorage for persistence
@@ -51,7 +51,7 @@ function SchoolLoginForm() {
       localStorage.setItem("userRole", json.role);
       localStorage.setItem("userId", String(json.school.id));
       localStorage.setItem("userName", json.school.adminName);
-      localStorage.setItem("schoolData", JSON.stringify(json.school));
+     // localStorage.setItem("schoolData", JSON.stringify(json.school));
       localStorage.setItem("token", json.token);
       
       sessionStorage.setItem("isLoggedIn", "true");
