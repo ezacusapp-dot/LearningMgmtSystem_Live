@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 
 // CREATE
 export const createSchoolRepo = async (data: any) => {
