@@ -561,3 +561,9 @@ model Student {
   role          UserRole @default(STUDENT)
   createdAt     DateTime @default(now())
 }
+
+enum DurationUnit {
+  DAYS
+  WEEKS
+  MONTHS
+}
