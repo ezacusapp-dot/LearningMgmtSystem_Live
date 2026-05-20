@@ -16,8 +16,11 @@ async function getStudentFromRequest(req: NextRequest) {
   try {
     const payload = await verifyToken(token);
     if (!payload || !payload.id) return null;
-    
-    const studentId = typeof payload.id === 'number' ? payload.id : parseInt(payload.id);
+    const studentId =
+  typeof payload.id === "number"
+    ? payload.id
+    : parseInt(String(payload.id));
+   // const studentId = typeof payload.id === 'number' ? payload.id : parseInt(payload.id);
     const student = await prisma.student.findUnique({
       where: { id: studentId },
     });
