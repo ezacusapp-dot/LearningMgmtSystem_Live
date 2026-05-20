@@ -88,8 +88,8 @@ export const deleteSchoolController = async (id: string) => {
 export const loginSchoolController = async (req: Request) => {
   try {
     const body = await req.json();
-    const { adminEmail, password } = validateLogin(body);
-    const school = await loginSchoolService(adminEmail, password);
+    const { email, password } = validateLogin(body);
+    const school = await loginSchoolService(email, password);
     // You may want to issue a JWT or session token here
     return NextResponse.json({
       success: true,
