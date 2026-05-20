@@ -48,16 +48,29 @@
 
 import { z } from "zod";
 
-const moduleTypeEnum = z.enum(
-  ["LESSON", "REVISION", "QUIZ", "FINAL_QUIZ"],
-  { errorMap: () => ({ message: "type must be LESSON, REVISION, QUIZ, or FINAL_QUIZ" }) }
-);
+const moduleTypeEnum = z
+  .enum([
+    "LESSON",
+    "REVISION",
+    "QUIZ",
+    "FINAL_QUIZ",
+  ])
+  .refine(
+    (val) =>
+      ["LESSON", "REVISION", "QUIZ", "FINAL_QUIZ"].includes(val),
+    {
+      message:
+        "type must be LESSON, REVISION, QUIZ, or FINAL_QUIZ",
+    }
+  );
 
 // ================= CREATE =================
 export const createModuleSchema = z.object({
   courseId:    z.string().min(1, "Course ID is required"),
   title:       z.string().min(1, "Title is required"),
-  order:       z.number({ required_error: "Order is required" }),
+  order: z.coerce.number().min(1, {
+  message: "Order is required",
+}),
   type:        moduleTypeEnum.optional(),
   description: z.string().optional(),
   isActive:    z.boolean().optional(),
