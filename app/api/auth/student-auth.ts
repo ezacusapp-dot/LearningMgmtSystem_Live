@@ -28,7 +28,8 @@ export async function getStudentFromToken(request: NextRequest): Promise<Student
       return null;
     }
 
-    const payload = await verifyToken(token) as StudentTokenPayload;
+   // const payload = await verifyToken(token) as StudentTokenPayload;
+    const payload = (await verifyToken(token)) as unknown as StudentTokenPayload;
     
     // Verify that the role is STUDENT
     if (payload.role !== "STUDENT") {
