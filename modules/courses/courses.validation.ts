@@ -1,8 +1,17 @@
 import { z } from "zod";
 
-const courseStatusEnum = z.enum(["Draft", "Published", "Archived"], {
-  errorMap: () => ({ message: "Status must be Draft, Published, or Archived" }),
-});
+// const courseStatusEnum = z.enum(["Draft", "Published", "Archived"], {
+//   errorMap: () => ({ message: "Status must be Draft, Published, or Archived" }),
+// });
+
+const courseStatusEnum = z
+  .enum(["Draft", "Published", "Archived"])
+  .refine(
+    (val) => ["Draft", "Published", "Archived"].includes(val),
+    {
+      message: "Status must be Draft, Published, or Archived",
+    }
+  );
 
 const optionSchema = z.object({
   text:      z.string(),
