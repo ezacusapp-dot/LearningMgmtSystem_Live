@@ -1,14 +1,26 @@
 import { prisma } from "@/lib/prisma";
-
+import { DurationUnit } from "@prisma/client";
 // CREATE
 export const createDurationTypeRepo = async (data: any) => {
   return prisma.courseDurationType.create({ data });
 };
 
 // DELETE - removed find by name function since no longer needed
-export const findDurationTypeByValueAndUnitRepo = async (value: number, unit: string) => {
+// export const findDurationTypeByValueAndUnitRepo = async (value: number, unit: string) => {
+//   return prisma.courseDurationType.findFirst({
+//     where: { value, unit },
+//   });
+// };
+
+export const findDurationTypeByValueAndUnitRepo = async (
+  value: number,
+  unit: DurationUnit
+) => {
   return prisma.courseDurationType.findFirst({
-    where: { value, unit },
+    where: {
+      value,
+      unit,
+    },
   });
 };
 
