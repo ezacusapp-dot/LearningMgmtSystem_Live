@@ -32,10 +32,27 @@
 
 import { z } from "zod";
 
-const contentTypeEnum = z.enum(
-  ["VIDEO", "PDF", "DOCUMENT", "ASSIGNMENT", "LINK"],
-  { errorMap: () => ({ message: "contentType must be VIDEO, PDF, DOCUMENT, ASSIGNMENT, or LINK" }) }
-);
+// const contentTypeEnum = z.enum(
+//   ["VIDEO", "PDF", "DOCUMENT", "ASSIGNMENT", "LINK"],
+//   { errorMap: () => ({ message: "contentType must be VIDEO, PDF, DOCUMENT, ASSIGNMENT, or LINK" }) }
+// );
+
+const contentTypeEnum = z
+  .enum([
+    "VIDEO",
+    "PDF",
+    "DOCUMENT",
+    "ASSIGNMENT",
+    "LINK",
+  ])
+  .refine(
+    (val) =>
+      ["VIDEO", "PDF", "DOCUMENT", "ASSIGNMENT", "LINK"].includes(val),
+    {
+      message:
+        "contentType must be VIDEO, PDF, DOCUMENT, ASSIGNMENT, or LINK",
+    }
+  );
 
 // ================= CREATE =================
 export const createLessonSchema = z.object({
