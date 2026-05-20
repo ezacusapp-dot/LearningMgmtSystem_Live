@@ -6,17 +6,13 @@ export const createSchoolSchema = z.object({
   adminEmail: z.string().email("Invalid email address"),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
-  region: z.enum(["North", "South", "East", "West", "Central"], {
-    errorMap: () => ({ message: "Invalid region" }),
-  }),
-  state: z.enum(["California", "Washington", "New York", "Texas", "Florida", "Illinois"], {
-    errorMap: () => ({ message: "Invalid state" }),
-  }),
+  region: z.enum(["North", "South", "East", "West", "Central"]),
+  state: z.enum(["California", "Washington", "New York", "Texas", "Florida", "Illinois"]),
   students: z.number().int().min(0).optional().default(0),
   active: z.boolean().optional().default(true),
   subscription: z.enum(["active", "trial", "expired"]).optional().default("trial"),
   performance: z.number().int().min(0).max(100).optional().default(0),
-  password: z.string().min(6, "Password must be at least 6 characters"), // ✅ added
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export const updateSchoolSchema = z.object({
@@ -31,10 +27,10 @@ export const updateSchoolSchema = z.object({
   active: z.boolean().optional(),
   subscription: z.enum(["active", "trial", "expired"]).optional(),
   performance: z.number().int().min(0).max(100).optional(),
-  password: z.string().min(6).optional(), // ✅ added (optional for update)
+  password: z.string().min(6).optional(),
 });
 
-// ✅ New login schema
+// Login schema
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
