@@ -1,15 +1,15 @@
 
 import { z } from "zod";
-
-const revisionContentTypeEnum = z.enum(["VIDEO", "PDF"], {
-  errorMap: () => ({ message: "Content type must be VIDEO or PDF" }),
-});
+const revisionContentTypeEnum = z.enum(["VIDEO", "PDF"]).refine(
+  (val) => val === "VIDEO" || val === "PDF",
+  "Content type must be VIDEO or PDF"
+);
 
 // ================= REVISION CONTENT SCHEMA =================
 const revisionContentSchema = z.object({
   contentType: revisionContentTypeEnum,
   fileUrl: z.string().min(1, "File URL is required"),
-  order: z.number({ required_error: "Order is required" }),
+  order: z.number({ error: "Order is required" }),
 });
 
 // ================= CREATE =================
