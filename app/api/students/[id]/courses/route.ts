@@ -17,7 +17,11 @@ async function getUserFromToken(req: NextRequest) {
     const payload = await verifyToken(token);
     if (!payload || !payload.id) return null;
     
-    const studentId = typeof payload.id === 'number' ? payload.id : parseInt(payload.id);
+     // const studentId = typeof payload.id === 'number' ? payload.id : parseInt(payload.id);
+      const studentId =
+  typeof payload.id === "number"
+    ? payload.id
+    : parseInt(String(payload.id));
     
     // Get or create User record for this student
     let user = await prisma.user.findFirst({
