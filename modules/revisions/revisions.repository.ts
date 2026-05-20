@@ -7,7 +7,7 @@ import { CreateRevisionDto, UpdateRevisionDto } from "./revisions.types";
 
 // ================= GET REVISIONS =================
 export const getRevisionsRepo = (where: any, skip: number, take: number) =>
-  prisma.revisions.findMany({
+  prisma.revision.findMany({
     where,
     skip,
     take,

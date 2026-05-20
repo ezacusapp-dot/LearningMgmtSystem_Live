@@ -139,7 +139,7 @@ export const addRevisionContentController = async (
     const schema = z.object({
       contentType: z.enum(["VIDEO", "PDF"]),
       fileUrl: z.string().min(1, "File URL is required"),
-      order: z.number({ required_error: "Order is required" }),
+      order: z.number({ error: "Order is required" }),
     });
 
     const validated = schema.parse(body);
