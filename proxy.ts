@@ -46,9 +46,11 @@ export async function proxy(req: NextRequest) {
     }
 
     try {
-      const payload = await verifyToken(token);
+      const payload = (await verifyToken(token)) as {
+  role?: string;
+};
 
-      const userRole = payload.role?.toUpperCase();
+const userRole = payload.role?.toUpperCase();
 
       if (
         userRole !== "ADMIN" &&
