@@ -532,7 +532,7 @@ export default function StudentLoginPage() {
                 role: data.student.role || "STUDENT",
                 name: `${data.student.firstName} ${data.student.lastName}`,
                 email: data.student.studentEmail || data.student.parentEmail || `${data.student.username}@student.local`,
-                id: data.student.id.toString(),
+                id: Number(data.student.id.toString()),
             });
 
             // IMPORTANT: Set cookie for middleware authentication
