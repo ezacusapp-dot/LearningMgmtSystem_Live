@@ -839,6 +839,82 @@ function QuizView({
 // Video player
 // ─────────────────────────────────────────────────────────────────────────────
 
+// function VideoPlayer({
+//   lesson,
+//   isPlaying,
+//   onTogglePlay,
+// }: {
+//   lesson: LessonItem | null;
+//   isPlaying: boolean;
+//   onTogglePlay: () => void;
+// }) {
+//   if (lesson?.fileUrl && isPlaying) {
+//     const url = lesson.fileUrl;
+//     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+//     if (ytMatch) {
+//       return (
+//         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+//           <iframe
+//             src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`}
+//             className="absolute inset-0 w-full h-full"
+//             allow="autoplay; fullscreen"
+//             allowFullScreen
+//           />
+//         </div>
+//       );
+//     }
+//     if (url.match(/\.(mp4|webm|ogg)$/i)) {
+//       return (
+//         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+//           <video
+//             src={url}
+//             controls
+//             autoPlay
+//             className="absolute inset-0 w-full h-full bg-black"
+//           />
+//         </div>
+//       );
+//     }
+//   }
+
+//   return (
+//     <div
+//       className="relative flex items-center justify-center"
+//       style={{ aspectRatio: "16/9", background: "#000" }}
+//     >
+//       <div
+//         className="absolute inset-0 pointer-events-none"
+//         style={{ background: "radial-gradient(ellipse at 70% 30%, rgba(99,153,34,0.08) 0%, transparent 70%)" }}
+//       />
+
+//       {!isPlaying ? (
+//         <button
+//           onClick={onTogglePlay}
+//           className="relative z-10 flex flex-col items-center gap-3 group"
+//         >
+//           <div className="w-16 h-16 rounded-full bg-[#639922] flex items-center justify-center shadow-lg group-hover:bg-[#3b6d11] transition-colors active:scale-95">
+//             <PlayIcon />
+//           </div>
+//           <p className="text-[11px] text-slate-400">{lesson?.title}</p>
+//         </button>
+//       ) : (
+//         <div className="relative z-10 flex flex-col items-center gap-2">
+//           <div className="w-12 h-12 rounded-full border-2 border-[#639922] flex items-center justify-center">
+//             <svg width="18" height="18" viewBox="0 0 20 20" fill="#639922">
+//               <path d="M6 4h3v12H6zM11 4h3v12h-3z" />
+//             </svg>
+//           </div>
+//           <p className="text-[11px] text-slate-400">Playing: {lesson?.title}</p>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Video player with Vimeo support
+// ─────────────────────────────────────────────────────────────────────────────
+
 function VideoPlayer({
   lesson,
   isPlaying,
@@ -850,6 +926,8 @@ function VideoPlayer({
 }) {
   if (lesson?.fileUrl && isPlaying) {
     const url = lesson.fileUrl;
+    
+    // YouTube detection
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
     if (ytMatch) {
       return (
@@ -863,6 +941,26 @@ function VideoPlayer({
         </div>
       );
     }
+    
+    // Vimeo detection - handles multiple Vimeo URL formats
+    const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)(?:\?.*)?$/) || 
+                       url.match(/(?:player\.vimeo\.com\/video\/)(\d+)/);
+    if (vimeoMatch) {
+      const vimeoId = vimeoMatch[1];
+      return (
+        <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+          <iframe
+            src={`https://player.vimeo.com/video/${vimeoId}?autoplay=1&badge=0&byline=0&portrait=0&title=0`}
+            className="absolute inset-0 w-full h-full"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            frameBorder="0"
+          />
+        </div>
+      );
+    }
+    
+    // Standard MP4/WebM/OGG detection
     if (url.match(/\.(mp4|webm|ogg)$/i)) {
       return (
         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
@@ -910,7 +1008,6 @@ function VideoPlayer({
     </div>
   );
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // PDF viewer
 // ─────────────────────────────────────────────────────────────────────────────

@@ -64,7 +64,7 @@ const mainNav: NavItem[] = [
   {
     label: "Exam Builder",
     icon: <FileText size={15} strokeWidth={1.8} />,
-    href: "/dashboard/exam_builder",
+    href: "/admin/dashboard/exam-builder",
   },
   {
     label: "Exam Management",
