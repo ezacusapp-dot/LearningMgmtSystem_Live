@@ -64,6 +64,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
       {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
