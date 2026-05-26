@@ -114,8 +114,8 @@ function OptionImagePill({ opt, onChange }) {
             onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0)"}
           >
             <span style={{ color: "#fff", opacity: 0 }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = 1; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = 0; }}
+             onMouseEnter={e => { e.currentTarget.style.opacity = "1"; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = "0"; }}
             ><Icon.Pencil /></span>
           </div>
         </div>
