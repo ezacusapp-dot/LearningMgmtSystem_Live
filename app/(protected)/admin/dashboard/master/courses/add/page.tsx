@@ -57,6 +57,7 @@ function canAddLesson(module, contentType) {
   return true;
 }
 
+
 function disabledReason(module, contentType) {
   if (module.type === "REVISION") {
     if (contentType !== "VIDEO") return "Revision modules allow Video only";
@@ -591,22 +592,28 @@ reader.onload = (ev) => {
   };
   const closeUploadModal = () => { setUploadTarget(null); setUploadFile(null); setVideoLinkDraft(["", "", ""]); };
   const handleFileChange = (e) => setUploadFile(e.target.files?.[0] ?? null);
-  const handleUploadConfirm = () => {
-    if (!uploadTarget) return;
-    const { moduleId, lessonId, contentType } = uploadTarget;
-    if (contentType === "VIDEO") {
-      const links = videoLinkDraft.map(l => l.trim()).filter(Boolean);
-      if (links.length === 0) { showToast("Please enter at least one video link"); return; }
-      updateLesson(moduleId, lessonId, { videoLinks: links, fileUrl: "" });
-      showToast(`${links.length} video link${links.length > 1 ? "s" : ""} saved!`);
-    } else if (contentType === "PDF") {
-      if (!uploadFile) { showToast("Please select a PDF file"); return; }
-      updateLesson(moduleId, lessonId, { fileUrl: uploadFile.name, videoLinks: [] });
-      showToast("PDF uploaded successfully!");
-    }
-    closeUploadModal();
-  };
+ const handleUploadConfirm = () => {
+  if (!uploadTarget) return;
+  const { moduleId, lessonId, contentType } = uploadTarget;
 
+  if (contentType === "VIDEO") {
+    const links = videoLinkDraft.map(l => l.trim()).filter(Boolean);
+    if (links.length === 0) { showToast("Please enter at least one video link"); return; }
+    updateLesson(moduleId, lessonId, { videoLinks: links, fileUrl: "" });
+    showToast(`${links.length} video link${links.length > 1 ? "s" : ""} saved!`);
+    closeUploadModal();
+  } else if (contentType === "PDF") {
+    if (!uploadFile) { showToast("Please select a PDF file"); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      updateLesson(moduleId, lessonId, { fileUrl: base64, videoLinks: [] });
+      showToast("PDF uploaded successfully!");
+      closeUploadModal();
+    };
+    reader.readAsDataURL(uploadFile);
+  }
+};
   // ── Test helpers ───────────────────────────────────────────────────────────
   const addTest = () =>
     setTests(prev => [...prev, {

@@ -1,5 +1,3 @@
-
-
 export async function GET() {
   return Response.json({
     status: true,
@@ -24,12 +22,22 @@ export async function GET() {
         { type: "Published", label: "Published" },
         { type: "Archived",  label: "Archived"  },
       ],
-      // ===== NEW ENUMS FOR QUIZ BUILDER =====
+      
+      // ===== UPDATED TO MATCH DATABASE ENUMS =====
       difficulties: [
-        { type: "Easy",   label: "Easy"   },
-        { type: "Medium", label: "Medium" },
-        { type: "Hard",   label: "Hard"   },
+        { type: "Easy",       label: "Easy"       },
+        { type: "Medium",     label: "Medium"     },
+        { type: "Difficult",  label: "Difficult"  },
+        { type: "Challenging", label: "Challenging" },
       ],
+      
+      questionTypes: [
+        { type: "Conceptual",     label: "Conceptual"     },
+        { type: "Prediction",     label: "Prediction"     },
+        { type: "Debugging",      label: "Debugging"      },
+        { type: "ProblemSolving", label: "Problem Solving" },
+      ],
+      
       bloomLevels: [
         { type: "Remember",   label: "Remember"   },
         { type: "Understand", label: "Understand" },
@@ -37,12 +45,6 @@ export async function GET() {
         { type: "Analyze",    label: "Analyze"    },
         { type: "Evaluate",   label: "Evaluate"   },
         { type: "Create",     label: "Create"     },
-      ],
-      questionTypes: [
-        { type: "Conceptual",        label: "Conceptual"        },
-        { type: "OutputPrediction",  label: "Output Prediction" },
-        { type: "ProblemSolving",    label: "Problem Solving"   },
-        { type: "Debugging",         label: "Debugging"         },
       ],
     },
   });

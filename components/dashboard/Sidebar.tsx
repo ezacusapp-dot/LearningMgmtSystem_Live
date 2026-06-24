@@ -67,32 +67,16 @@ const mainNav: NavItem[] = [
     href: "/admin/dashboard/exam-builder",
   },
   {
-    label: "Exam Management",
-    icon: <ClipboardList size={15} strokeWidth={1.8} />,
-    href: "/dashboard/exam_management",
-  },
-  {
     label: "Master Data",
     icon: <Database size={15} strokeWidth={1.8} />,
     children: [
       { label: "Award Category",  href: "/admin/dashboard/master/award-category" },
-
-  // { label: "Category",        href: "/admin/dashboard/master/category" },
-  // { label: "Course Category", href: "/admin/dashboard/master/course-categories" },
-  // { label: "Courses",         href: "/admin/dashboard/master/courses" },
-  // { label: "Duration Type",   href: "/admin/dashboard/master/duration" },
-  // { label: "Lesson",          href: "/admin/dashboard/master/lesson" },
-  //  { label: "Modules",          href: "/admin/dashboard/master/module" },
-  // { label: "Levels",           href: "/admin/dashboard/master/levels" },
-  // { label: "Validity Period", href: "/admin/dashboard/master/validity-periods" },
-
-        { label: "Validity Period", href: "/admin/dashboard/master/validity-periods" },
          { label: "Duration Type",   href: "/admin/dashboard/master/duration" },
            { label: "Levels",           href: "/admin/dashboard/master/levels" },
   { label: "Course Category", href: "/admin/dashboard/master/course-categories" },
-  { label: "Courses",         href: "/admin/dashboard/master/courses" },
-     { label: "Modules",          href: "/admin/dashboard/master/module" },  
-  { label: "Lesson",          href: "/admin/dashboard/master/lesson" },
+  //{ label: "Courses",         href: "/admin/dashboard/master/courses" },
+   //  { label: "Modules",          href: "/admin/dashboard/master/module" },  
+  //{ label: "Lesson",          href: "/admin/dashboard/master/lesson" },
     { label: "Grades",          href: "/admin/dashboard/master/grade" },
 
 
