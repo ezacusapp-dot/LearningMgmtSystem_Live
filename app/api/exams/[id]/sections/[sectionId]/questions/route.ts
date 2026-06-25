@@ -37,7 +37,9 @@ export async function PUT(
     const { id, sectionId } = await params;
     const body = await req.json();
     const validated = validateBulkUpdateQuestions(body);
-    const data = await bulkUpdateSectionQuestionsService(id, sectionId, validated.questions);
+const section = validated.sections.find(s => s.sectionId === sectionId);
+if (!section) throw new Error("Section not found in request body");
+const data = await bulkUpdateSectionQuestionsService(id, sectionId, section.questions);
     return Response.json({ 
       status: true, 
       message: "Questions updated successfully", 
