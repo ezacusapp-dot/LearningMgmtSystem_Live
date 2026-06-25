@@ -99,7 +99,7 @@ function Sel({ value, onChange, options, placeholder }) {
   );
 }
 
-function inp(err) {
+function inp(err?: string)  {
   return { style:{ width:"100%", padding:"0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${err ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }};
 }
 
