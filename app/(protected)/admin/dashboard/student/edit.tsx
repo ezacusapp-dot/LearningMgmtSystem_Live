@@ -1,21 +1,24 @@
 "use client";
 import { useState } from "react";
 
-// ─── Same helpers as add (duplicated) ──────────────────────────────────────
-const SECTIONS = ["A","B","C","D"];
+// ─── Shared helpers ──────────────────────────────────────────────────────────
+const SECTIONS = ["A", "B", "C", "D"];
 
-function pwStrength(pw) {
-  if (!pw) return { level:0, label:"", color:"#2d3448" };
+function pwStrength(pw: string) {
+  if (!pw) return { level: 0, label: "", color: "#2d3448" };
   let s = 0;
-  if (pw.length >= 6) s++; if (pw.length >= 10) s++;
-  if (/[A-Z]/.test(pw)) s++; if (/[0-9]/.test(pw)) s++; if (/[^A-Za-z0-9]/.test(pw)) s++;
-  if (s <= 1) return { level:1, label:"Weak",   color:"#ef4444" };
-  if (s <= 2) return { level:2, label:"Fair",   color:"#f59e0b" };
-  if (s <= 3) return { level:3, label:"Good",   color:"#3b82f6" };
-  return       { level:4, label:"Strong", color:"#c0dd97" };
+  if (pw.length >= 6) s++;
+  if (pw.length >= 10) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/[0-9]/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  if (s <= 1) return { level: 1, label: "Weak",   color: "#ef4444" };
+  if (s <= 2) return { level: 2, label: "Fair",   color: "#f59e0b" };
+  if (s <= 3) return { level: 3, label: "Good",   color: "#3b82f6" };
+  return             { level: 4, label: "Strong", color: "#c0dd97" };
 }
 
-function generateUsername(firstName, lastName) {
+function generateUsername(firstName: string, lastName: string) {
   if (!firstName) return "";
   const f = firstName.toLowerCase().replace(/\s+/g, "");
   const l = (lastName || "").toLowerCase().replace(/\s+/g, "");
@@ -29,7 +32,7 @@ function generatePassword(length = 10) {
   const digits  = "0123456789";
   const special = "!@#$%^&*";
   const all     = upper + lower + digits + special;
-  let pw = [
+  const pw: string[] = [
     upper[Math.floor(Math.random() * upper.length)],
     lower[Math.floor(Math.random() * lower.length)],
     digits[Math.floor(Math.random() * digits.length)],
@@ -39,10 +42,10 @@ function generatePassword(length = 10) {
   return pw.sort(() => Math.random() - 0.5).join("");
 }
 
-function gpaColor(g)  { return g >= 9 ? "#34d399" : g >= 7 ? "#fbbf24" : "#f87171"; }
-function attColor(a)  { return a >= 90 ? "#34d399" : a >= 75 ? "#fbbf24" : "#f87171"; }
+function gpaColor(g: number) { return g >= 9 ? "#34d399" : g >= 7 ? "#fbbf24" : "#f87171"; }
+function attColor(a: number) { return a >= 90 ? "#34d399" : a >= 75 ? "#fbbf24" : "#f87171"; }
 
-// ─── Icons (same as add) ──────────────────────────────────────────────────
+// ─── Icons ───────────────────────────────────────────────────────────────────
 const Ic = {
   Cap:      () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
   Person:   () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
@@ -62,45 +65,85 @@ const Ic = {
   X:        () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
   Save:     () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
   Sparkle:  () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17 5.8 21.3l2.4-7.4L2 9.4h7.6z"/></svg>,
-  Loader:   () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation:"spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>,
+  Loader:   () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>,
   Copy:     () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>,
 };
 
-// ─── UI Primitives (same as add) ──────────────────────────────────────────
-function Field({ label, icon, required, error, children, hint }) {
+// ─── UI Primitives ───────────────────────────────────────────────────────────
+interface FieldProps {
+  label: string;
+  icon: React.ReactNode;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+  hint?: string;
+}
+
+function Field({ label, icon, required, error, children, hint }: FieldProps) {
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-      <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:"0.75rem", fontWeight:600, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.04em" }}>
-        <span style={{ color:"#639922" }}>{icon}</span>{label}
-        {required && <span style={{ color:"#f87171" }}>*</span>}
-        {hint && <span style={{ marginLeft:"auto", fontSize:"0.65rem", color:"#3a4460", fontWeight:400, textTransform:"none", letterSpacing:0 }}>{hint}</span>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.75rem", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+        <span style={{ color: "#639922" }}>{icon}</span>{label}
+        {required && <span style={{ color: "#f87171" }}>*</span>}
+        {hint && <span style={{ marginLeft: "auto", fontSize: "0.65rem", color: "#3a4460", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{hint}</span>}
       </label>
       {children}
-      {error && <span style={{ fontSize:"0.72rem", color:"#f87171" }}>{error}</span>}
+      {error && <span style={{ fontSize: "0.72rem", color: "#f87171" }}>{error}</span>}
     </div>
   );
 }
 
-function Sel({ value, onChange, options, placeholder }) {
+interface SelOption { value: string | number; label: string; }
+
+function Sel({ value, onChange, options, placeholder }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: (string | SelOption)[];
+  placeholder?: string;
+}) {
   return (
-    <div style={{ position:"relative" }}>
-      <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width:"100%", padding:"0.65rem 2rem 0.65rem 0.9rem", background:"#0f1117", border:"1px solid #2d3448", borderRadius:9, color: value ? "#e2e8f0" : "#3a4460", fontSize:"0.875rem", outline:"none", cursor:"pointer", appearance:"none", fontFamily:"inherit" }}>
+    <div style={{ position: "relative" }}>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{ width: "100%", padding: "0.65rem 2rem 0.65rem 0.9rem", background: "#0f1117", border: "1px solid #2d3448", borderRadius: 9, color: value ? "#e2e8f0" : "#3a4460", fontSize: "0.875rem", outline: "none", cursor: "pointer", appearance: "none", fontFamily: "inherit" }}
+      >
         {placeholder && <option value="">{placeholder}</option>}
-        {options.map(o => (
-          <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>
-        ))}
+        {options.map(o => {
+          const val = typeof o === "string" ? o : String(o.value);
+          const lbl = typeof o === "string" ? o : o.label;
+          return <option key={val} value={val}>{lbl}</option>;
+        })}
       </select>
-      <span style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", color:"#475569", pointerEvents:"none", fontSize:"0.7rem" }}>▾</span>
+      <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#475569", pointerEvents: "none", fontSize: "0.7rem" }}>▾</span>
     </div>
   );
 }
 
-function inp(err) {
-  return { style:{ width:"100%", padding:"0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${err ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }};
+function inp(err?: string) {
+  return {
+    style: {
+      width: "100%",
+      padding: "0.65rem 0.9rem",
+      background: "#0f1117",
+      border: `1px solid ${err ? "#7f1d1d" : "#2d3448"}`,
+      borderRadius: 9,
+      color: "#e2e8f0",
+      fontSize: "0.875rem",
+      outline: "none",
+      boxSizing: "border-box" as const,
+      fontFamily: "inherit",
+    },
+  };
 }
 
-function CredRow({ label, icon, value, mono, onCopy }) {
+function CredRow({ label, icon, value, mono, onCopy }: {
+  label: string;
+  icon: React.ReactNode;
+  value?: string;
+  mono?: boolean;
+  onCopy?: () => void;
+}) {
   const [copied, setCopied] = useState(false);
   const doCopy = () => {
     if (!value) return;
@@ -110,14 +153,17 @@ function CredRow({ label, icon, value, mono, onCopy }) {
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:6, background:"#0a0d14", border:"1px solid #252d3d", borderRadius:8, padding:"0.5rem 0.75rem" }}>
-      <span style={{ color:"#639922", flexShrink:0 }}>{icon}</span>
-      <span style={{ flex:1, fontSize: mono ? "0.8rem" : "0.85rem", fontFamily: mono ? "'Fira Mono','Consolas',monospace" : "inherit", color:"#e2e8f0", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-        {value || <span style={{ color:"#3a4460" }}>—</span>}
+    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#0a0d14", border: "1px solid #252d3d", borderRadius: 8, padding: "0.5rem 0.75rem" }}>
+      <span style={{ color: "#639922", flexShrink: 0 }}>{icon}</span>
+      <span style={{ flex: 1, fontSize: mono ? "0.8rem" : "0.85rem", fontFamily: mono ? "'Fira Mono','Consolas',monospace" : "inherit", color: "#e2e8f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {value || <span style={{ color: "#3a4460" }}>—</span>}
       </span>
       {value && (
-        <button title="Copy" onClick={doCopy}
-          style={{ background:"transparent", border:"none", color: copied ? "#c0dd97" : "#475569", cursor:"pointer", padding:"2px 3px", borderRadius:4, display:"flex", flexShrink:0, transition:"color 0.15s" }}>
+        <button
+          title="Copy"
+          onClick={doCopy}
+          style={{ background: "transparent", border: "none", color: copied ? "#c0dd97" : "#475569", cursor: "pointer", padding: "2px 3px", borderRadius: 4, display: "flex", flexShrink: 0, transition: "color 0.15s" }}
+        >
           <Ic.Copy />
         </button>
       )}
@@ -125,7 +171,42 @@ function CredRow({ label, icon, value, mono, onCopy }) {
   );
 }
 
-// ─── Form Modal (Edit mode) ─────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  dob: string;
+  gender: string;
+  schoolId: string;
+  school: string;
+  gradeId: string;
+  grade: string;
+  section: string;
+  schoolYear: string;
+  parentName: string;
+  parentPhone: string;
+  parentEmail: string;
+  address: string;
+  gpa: number;
+  attendance: number;
+  status: string;
+  username: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface EditModalProps {
+  formData: FormData;
+  setFormData: React.Dispatch<React.SetStateAction<FormData>>;
+  onSave: () => void;
+  onClose: () => void;
+  loading: boolean;
+  gradeOptions: SelOption[];
+  schoolOptions: SelOption[];
+}
+
+// ─── Form Modal (Edit mode) ──────────────────────────────────────────────────
 export default function EditModal({
   formData,
   setFormData,
@@ -134,19 +215,20 @@ export default function EditModal({
   loading,
   gradeOptions,
   schoolOptions,
-}) {
-  const [errors, setErrors]  = useState({});
-  const [showPw, setShowPw]  = useState(false);
-  const [showCp, setShowCp]  = useState(false);
+}: EditModalProps) {
+  // ✅ Fix: typed as Record<string, string> so dynamic key deletion is allowed
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPw, setShowPw] = useState(false);
+  const [showCp, setShowCp] = useState(false);
 
   const strength = pwStrength(formData.password);
 
-  const set = (key, val) => {
+  const set = (key: keyof FormData, val: string | number) => {
     setFormData(p => ({ ...p, [key]: val }));
-    setErrors(p => { const n = {...p}; delete n[key]; return n; });
+    setErrors(p => { const n = { ...p }; delete n[key]; return n; });
   };
 
-  const handleNameChange = (val) => {
+  const handleNameChange = (val: string) => {
     set("name", val);
     if (formData.username) {
       const [first, ...rest] = val.trim().split(" ");
@@ -161,23 +243,25 @@ export default function EditModal({
     const newUser = generateUsername(first || "student", last);
     const newPw   = generatePassword(12);
     setFormData(p => ({ ...p, username: newUser, password: newPw, confirmPassword: newPw }));
-    setErrors(p => { const n = {...p}; delete n.username; delete n.password; delete n.confirmPassword; return n; });
+    // ✅ Fix: n is Record<string, string> so delete n["username"] etc. is valid
+    setErrors(p => { const n = { ...p }; delete n["username"]; delete n["password"]; delete n["confirmPassword"]; return n; });
   };
 
   const validate = () => {
-    const errs = {};
-    if (!formData.name.trim())         errs.name = "Student name is required";
-    if (!formData.email.trim())        errs.email = "Email is required";
+    const errs: Record<string, string> = {};
+    if (!formData.name.trim())        errs.name = "Student name is required";
+    if (!formData.email.trim())       errs.email = "Email is required";
     else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email))
       errs.email = "Invalid email address";
-    if (!formData.phone.trim())        errs.phone = "Phone is required";
-    else if (!/^\d{10}$/.test(formData.phone.replace(/\s/g, '')))
+    if (!formData.phone.trim())       errs.phone = "Phone is required";
+    else if (!/^\d{10}$/.test(formData.phone.replace(/\s/g, "")))
       errs.phone = "Phone must be exactly 10 digits";
-    if (!formData.parentPhone.trim())  errs.parentPhone = "Parent phone is required";
-    else if (!/^\d{10}$/.test(formData.parentPhone.replace(/\s/g, '')))
+    if (!formData.parentPhone.trim()) errs.parentPhone = "Parent phone is required";
+    else if (!/^\d{10}$/.test(formData.parentPhone.replace(/\s/g, "")))
       errs.parentPhone = "Parent phone must be exactly 10 digits";
-    if (!formData.address.trim())      errs.address = "Address is required";
-    if (!formData.username.trim())     errs.username = "Username is required";
+    if (!formData.address.trim())     errs.address = "Address is required";
+    if (!formData.username.trim())    errs.username = "Username is required";
+    // In edit mode, password is optional — only validate if provided
     if (formData.password) {
       if (formData.password.length < 6) errs.password = "Min 6 characters";
       if (formData.password !== formData.confirmPassword) errs.confirmPassword = "Passwords do not match";
@@ -187,26 +271,40 @@ export default function EditModal({
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.72)", display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem", zIndex:100, backdropFilter:"blur(4px)", animation:"fadeIn 0.2s ease" }} onClick={onClose}>
-      <div style={{ background:"#161b27", border:"1px solid #2d3448", borderRadius:16, width:"100%", maxWidth:720, maxHeight:"92vh", overflowY:"auto", display:"flex", flexDirection:"column", boxShadow:"0 24px 80px rgba(0,0,0,0.6)", animation:"slideUp 0.25s ease" }} onClick={e => e.stopPropagation()}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1.3rem 1.5rem", borderBottom:"1px solid #1e2535", background:"#131720", borderRadius:"16px 16px 0 0", flexShrink:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ width:42, height:42, borderRadius:10, background:"rgba(99,153,34,0.12)", border:"1px solid rgba(99,153,34,0.25)", display:"flex", alignItems:"center", justifyContent:"center", color:"#c0dd97" }}><Ic.Cap /></div>
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", zIndex: 100, backdropFilter: "blur(4px)", animation: "fadeIn 0.2s ease" }}
+      onClick={onClose}
+    >
+      <div
+        style={{ background: "#161b27", border: "1px solid #2d3448", borderRadius: 16, width: "100%", maxWidth: 720, maxHeight: "92vh", overflowY: "auto", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,0.6)", animation: "slideUp 0.25s ease" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.3rem 1.5rem", borderBottom: "1px solid #1e2535", background: "#131720", borderRadius: "16px 16px 0 0", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 10, background: "rgba(99,153,34,0.12)", border: "1px solid rgba(99,153,34,0.25)", display: "flex", alignItems: "center", justifyContent: "center", color: "#c0dd97" }}>
+              <Ic.Cap />
+            </div>
             <div>
-              <h2 style={{ margin:"0 0 2px", fontSize:"1.05rem", fontWeight:700, color:"#f1f5f9" }}>Edit Student</h2>
-              <p style={{ margin:0, fontSize:"0.76rem", color:"#475569" }}>Update student information</p>
+              <h2 style={{ margin: "0 0 2px", fontSize: "1.05rem", fontWeight: 700, color: "#f1f5f9" }}>Edit Student</h2>
+              <p style={{ margin: 0, fontSize: "0.76rem", color: "#475569" }}>Update student information</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ width:32, height:32, borderRadius:8, border:"1px solid #2d3448", background:"transparent", color:"#64748b", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Ic.X /></button>
+          <button
+            onClick={onClose}
+            style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #2d3448", background: "transparent", color: "#64748b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <Ic.X />
+          </button>
         </div>
 
-        <div style={{ padding:"1.4rem 1.5rem", display:"flex", flexDirection:"column", gap:"1.1rem" }}>
-          {/* --- same form fields as add, but with mode-specific labels/validation --- */}
+        {/* Body */}
+        <div style={{ padding: "1.4rem 1.5rem", display: "flex", flexDirection: "column", gap: "1.1rem" }}>
           <Field label="Full Name" icon={<Ic.Person />} required error={errors.name}>
             <input value={formData.name} onChange={e => handleNameChange(e.target.value)} placeholder="Student full name" {...inp(errors.name)} />
           </Field>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <Field label="Email" icon={<Ic.Mail />} required error={errors.email}>
               <input type="email" value={formData.email} onChange={e => set("email", e.target.value)} placeholder="student@school.edu" {...inp(errors.email)} />
             </Field>
@@ -215,12 +313,12 @@ export default function EditModal({
             </Field>
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <Field label="Date of Birth" icon={<Ic.Calendar />} error={errors.dob}>
               <input type="date" value={formData.dob} onChange={e => set("dob", e.target.value)} {...inp(errors.dob)} />
             </Field>
             <Field label="Gender" icon={<Ic.Gender />}>
-              <Sel value={formData.gender} onChange={v => set("gender", v)} options={["Male","Female","Other"]} />
+              <Sel value={formData.gender} onChange={v => set("gender", v)} options={["Male", "Female", "Other"]} />
             </Field>
           </div>
 
@@ -230,21 +328,21 @@ export default function EditModal({
               onChange={v => {
                 const found = schoolOptions.find(s => String(s.value) === String(v));
                 setFormData(p => ({ ...p, schoolId: v, school: found?.label || "" }));
-                setErrors(p => { const n = {...p}; delete n.schoolId; return n; });
+                setErrors(p => { const n = { ...p }; delete n["schoolId"]; return n; });
               }}
               options={schoolOptions}
               placeholder="Select School"
             />
           </Field>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <Field label="Grade / Standard" icon={<Ic.Cap />} required error={errors.gradeId}>
               <Sel
                 value={formData.gradeId}
                 onChange={v => {
                   const found = gradeOptions.find(g => String(g.value) === String(v));
                   setFormData(p => ({ ...p, gradeId: v, grade: found?.label || v }));
-                  setErrors(p => { const n = {...p}; delete n.gradeId; return n; });
+                  setErrors(p => { const n = { ...p }; delete n["gradeId"]; return n; });
                 }}
                 options={gradeOptions}
                 placeholder="Select Grade"
@@ -259,7 +357,7 @@ export default function EditModal({
             <input value={formData.schoolYear} onChange={e => set("schoolYear", e.target.value)} placeholder="2024" {...inp()} />
           </Field>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <Field label="Parent / Guardian Name" icon={<Ic.Person />} error={errors.parentName}>
               <input value={formData.parentName} onChange={e => set("parentName", e.target.value)} placeholder="Parent full name" {...inp(errors.parentName)} />
             </Field>
@@ -273,105 +371,149 @@ export default function EditModal({
           </Field>
 
           <Field label="Home Address" icon={<Ic.Home />} required error={errors.address}>
-            <textarea value={formData.address} onChange={e => set("address", e.target.value)} placeholder="Enter full home address" rows={2}
-              style={{ width:"100%", padding:"0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${errors.address ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", boxSizing:"border-box", fontFamily:"inherit", resize:"none", lineHeight:1.5 }} />
+            <textarea
+              value={formData.address}
+              onChange={e => set("address", e.target.value)}
+              placeholder="Enter full home address"
+              rows={2}
+              style={{ width: "100%", padding: "0.65rem 0.9rem", background: "#0f1117", border: `1px solid ${errors.address ? "#7f1d1d" : "#2d3448"}`, borderRadius: 9, color: "#e2e8f0", fontSize: "0.875rem", outline: "none", boxSizing: "border-box", fontFamily: "inherit", resize: "none", lineHeight: 1.5 }}
+            />
           </Field>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <Field label="GPA Score (0–10)" icon={<Ic.Star />}>
-              <input type="number" value={formData.gpa} min="0" max="10" step="0.1"
-                onChange={e => set("gpa", Math.min(10, parseFloat(e.target.value)||0))} placeholder="0.0" {...inp()} />
+              <input
+                type="number"
+                value={formData.gpa}
+                min="0"
+                max="10"
+                step="0.1"
+                onChange={e => set("gpa", Math.min(10, parseFloat(e.target.value) || 0))}
+                placeholder="0.0"
+                {...inp()}
+              />
               {formData.gpa > 0 && (
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <div style={{ flex:1, height:4, background:"#2d3448", borderRadius:2, overflow:"hidden" }}>
-                    <div style={{ height:"100%", width:`${(formData.gpa/10)*100}%`, background:`linear-gradient(90deg,${gpaColor(formData.gpa)}66,${gpaColor(formData.gpa)})`, borderRadius:2, transition:"width 0.3s" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, height: 4, background: "#2d3448", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${(formData.gpa / 10) * 100}%`, background: `linear-gradient(90deg,${gpaColor(formData.gpa)}66,${gpaColor(formData.gpa)})`, borderRadius: 2, transition: "width 0.3s" }} />
                   </div>
-                  <span style={{ fontSize:"0.7rem", fontWeight:700, color:gpaColor(formData.gpa), minWidth:28 }}>{formData.gpa.toFixed(1)}</span>
+                  <span style={{ fontSize: "0.7rem", fontWeight: 700, color: gpaColor(formData.gpa), minWidth: 28 }}>{formData.gpa.toFixed(1)}</span>
                 </div>
               )}
             </Field>
             <Field label="Attendance (%)" icon={<Ic.Heart />}>
-              <input type="number" value={formData.attendance} min="0" max="100"
-                onChange={e => set("attendance", Math.min(100, parseInt(e.target.value)||0))} placeholder="0" {...inp()} />
+              <input
+                type="number"
+                value={formData.attendance}
+                min="0"
+                max="100"
+                onChange={e => set("attendance", Math.min(100, parseInt(e.target.value) || 0))}
+                placeholder="0"
+                {...inp()}
+              />
               {formData.attendance > 0 && (
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <div style={{ flex:1, height:4, background:"#2d3448", borderRadius:2, overflow:"hidden" }}>
-                    <div style={{ height:"100%", width:`${formData.attendance}%`, background:`linear-gradient(90deg,${attColor(formData.attendance)}66,${attColor(formData.attendance)})`, borderRadius:2, transition:"width 0.3s" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, height: 4, background: "#2d3448", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${formData.attendance}%`, background: `linear-gradient(90deg,${attColor(formData.attendance)}66,${attColor(formData.attendance)})`, borderRadius: 2, transition: "width 0.3s" }} />
                   </div>
-                  <span style={{ fontSize:"0.7rem", fontWeight:700, color:attColor(formData.attendance), minWidth:28 }}>{formData.attendance}%</span>
+                  <span style={{ fontSize: "0.7rem", fontWeight: 700, color: attColor(formData.attendance), minWidth: 28 }}>{formData.attendance}%</span>
                 </div>
               )}
             </Field>
           </div>
 
-          <div style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }} onClick={() => set("status", formData.status === "active" ? "inactive" : "active")}>
-            <div style={{ width:44, height:24, borderRadius:12, background:formData.status === "active" ? "rgba(99,153,34,0.25)" : "#2d3448", border:`1px solid ${formData.status === "active" ? "rgba(99,153,34,0.5)" : "#3d4860"}`, position:"relative", transition:"all 0.2s", flexShrink:0 }}>
-              <div style={{ position:"absolute", top:3, left:formData.status === "active" ? 22 : 3, width:16, height:16, borderRadius:8, background:formData.status === "active" ? "#c0dd97" : "#64748b", transition:"left 0.2s" }} />
+          {/* Status toggle */}
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
+            onClick={() => set("status", formData.status === "active" ? "inactive" : "active")}
+          >
+            <div style={{ width: 44, height: 24, borderRadius: 12, background: formData.status === "active" ? "rgba(99,153,34,0.25)" : "#2d3448", border: `1px solid ${formData.status === "active" ? "rgba(99,153,34,0.5)" : "#3d4860"}`, position: "relative", transition: "all 0.2s", flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: 3, left: formData.status === "active" ? 22 : 3, width: 16, height: 16, borderRadius: 8, background: formData.status === "active" ? "#c0dd97" : "#64748b", transition: "left 0.2s" }} />
             </div>
-            <span style={{ fontSize:"0.855rem", color:"#94a3b8" }}>Student is <strong style={{ color:"#e2e8f0" }}>{formData.status === "active" ? "Active" : "Inactive"}</strong></span>
-            {formData.status === "active" && <span style={{ width:8, height:8, borderRadius:"50%", background:"#639922", boxShadow:"0 0 6px rgba(99,153,34,0.6)", display:"inline-block" }} />}
+            <span style={{ fontSize: "0.855rem", color: "#94a3b8" }}>
+              Student is <strong style={{ color: "#e2e8f0" }}>{formData.status === "active" ? "Active" : "Inactive"}</strong>
+            </span>
+            {formData.status === "active" && (
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#639922", boxShadow: "0 0 6px rgba(99,153,34,0.6)", display: "inline-block" }} />
+            )}
           </div>
 
-          <div style={{ marginTop:"0.4rem" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:"1rem" }}>
-              <div style={{ flex:1, height:1, background:"#1e2535" }} />
-              <span style={{ display:"flex", alignItems:"center", gap:6, fontSize:"0.7rem", fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:"0.08em", whiteSpace:"nowrap" }}>
+          {/* Credentials section */}
+          <div style={{ marginTop: "0.4rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1rem" }}>
+              <div style={{ flex: 1, height: 1, background: "#1e2535" }} />
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.7rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>
                 <Ic.Key />Login Credentials
-                <span style={{ fontSize:"0.65rem", color:"#3a4460", fontWeight:500, background:"#1a2030", border:"1px solid #2d3448", borderRadius:20, padding:"1px 7px", textTransform:"none", letterSpacing:0 }}>optional – leave blank to keep current</span>
+                <span style={{ fontSize: "0.65rem", color: "#3a4460", fontWeight: 500, background: "#1a2030", border: "1px solid #2d3448", borderRadius: 20, padding: "1px 7px", textTransform: "none", letterSpacing: 0 }}>
+                  optional – leave blank to keep current
+                </span>
               </span>
-              <div style={{ flex:1, height:1, background:"#1e2535" }} />
+              <div style={{ flex: 1, height: 1, background: "#1e2535" }} />
             </div>
 
-            <div style={{ display:"flex", justifyContent:"center", marginBottom:"1.2rem" }}>
-              <button type="button" onClick={handleGenerateBoth}
-                style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"0.6rem 1.4rem", background:"rgba(99,153,34,0.12)", border:"1px solid rgba(99,153,34,0.35)", borderRadius:10, color:"#c0dd97", fontSize:"0.85rem", fontWeight:700, cursor:"pointer", letterSpacing:"0.02em", transition:"all 0.15s" }}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.2rem" }}>
+              <button
+                type="button"
+                onClick={handleGenerateBoth}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "0.6rem 1.4rem", background: "rgba(99,153,34,0.12)", border: "1px solid rgba(99,153,34,0.35)", borderRadius: 10, color: "#c0dd97", fontSize: "0.85rem", fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em", transition: "all 0.15s" }}
                 onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,153,34,0.2)"; e.currentTarget.style.borderColor = "rgba(99,153,34,0.55)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(99,153,34,0.12)"; e.currentTarget.style.borderColor = "rgba(99,153,34,0.35)"; }}>
-                <Ic.Sparkle />
-                Generate Credentials
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(99,153,34,0.12)"; e.currentTarget.style.borderColor = "rgba(99,153,34,0.35)"; }}
+              >
+                <Ic.Sparkle />Generate Credentials
               </button>
             </div>
 
-            <div style={{ display:"flex", flexDirection:"column", gap:"0.9rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
               <Field label="Username" icon={<Ic.Person />} required error={errors.username} hint="Auto-filled from name">
-                <input value={formData.username} onChange={e => set("username", e.target.value)} placeholder="e.g. john.doe123"
-                  style={{ width:"100%", padding:"0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${errors.username ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", fontFamily:"'Fira Mono','Consolas',monospace", boxSizing:"border-box" }} />
+                <input
+                  value={formData.username}
+                  onChange={e => set("username", e.target.value)}
+                  placeholder="e.g. john.doe123"
+                  style={{ width: "100%", padding: "0.65rem 0.9rem", background: "#0f1117", border: `1px solid ${errors.username ? "#7f1d1d" : "#2d3448"}`, borderRadius: 9, color: "#e2e8f0", fontSize: "0.875rem", outline: "none", fontFamily: "'Fira Mono','Consolas',monospace", boxSizing: "border-box" }}
+                />
               </Field>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <Field label="Password" icon={<Ic.Lock />} error={errors.password}>
-                  <div style={{ position:"relative" }}>
-                    <input type={showPw ? "text" : "password"} value={formData.password}
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showPw ? "text" : "password"}
+                      value={formData.password}
                       onChange={e => set("password", e.target.value)}
                       placeholder="Leave blank to keep current"
-                      style={{ width:"100%", padding:"0.65rem 2.6rem 0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${errors.password ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", boxSizing:"border-box", fontFamily:"'Fira Mono','Consolas',monospace" }} />
-                    <button type="button" onClick={() => setShowPw(v => !v)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"transparent", border:"none", color:"#475569", cursor:"pointer", display:"flex", padding:3 }}>
+                      style={{ width: "100%", padding: "0.65rem 2.6rem 0.65rem 0.9rem", background: "#0f1117", border: `1px solid ${errors.password ? "#7f1d1d" : "#2d3448"}`, borderRadius: 9, color: "#e2e8f0", fontSize: "0.875rem", outline: "none", boxSizing: "border-box", fontFamily: "'Fira Mono','Consolas',monospace" }}
+                    />
+                    <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", color: "#475569", cursor: "pointer", display: "flex", padding: 3 }}>
                       {showPw ? <Ic.EyeOff /> : <Ic.Eye />}
                     </button>
                   </div>
                   {formData.password && (
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
-                      <div style={{ display:"flex", gap:4, flex:1 }}>
-                        {[1,2,3,4].map(lvl => (
-                          <div key={lvl} style={{ height:4, flex:1, borderRadius:2, background:lvl <= strength.level ? strength.color : "#2d3448", transition:"background 0.25s" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                      <div style={{ display: "flex", gap: 4, flex: 1 }}>
+                        {[1, 2, 3, 4].map(lvl => (
+                          <div key={lvl} style={{ height: 4, flex: 1, borderRadius: 2, background: lvl <= strength.level ? strength.color : "#2d3448", transition: "background 0.25s" }} />
                         ))}
                       </div>
-                      <span style={{ fontSize:"0.7rem", fontWeight:700, color:strength.color, minWidth:40 }}>{strength.label}</span>
+                      <span style={{ fontSize: "0.7rem", fontWeight: 700, color: strength.color, minWidth: 40 }}>{strength.label}</span>
                     </div>
                   )}
                 </Field>
+
                 <Field label="Confirm Password" icon={<Ic.Lock />} error={errors.confirmPassword}>
-                  <div style={{ position:"relative" }}>
-                    <input type={showCp ? "text" : "password"} value={formData.confirmPassword}
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showCp ? "text" : "password"}
+                      value={formData.confirmPassword}
                       onChange={e => set("confirmPassword", e.target.value)}
                       placeholder="Re-enter password"
-                      style={{ width:"100%", padding:"0.65rem 2.6rem 0.65rem 0.9rem", background:"#0f1117", border:`1px solid ${errors.confirmPassword ? "#7f1d1d" : "#2d3448"}`, borderRadius:9, color:"#e2e8f0", fontSize:"0.875rem", outline:"none", boxSizing:"border-box", fontFamily:"'Fira Mono','Consolas',monospace" }} />
-                    <button type="button" onClick={() => setShowCp(v => !v)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"transparent", border:"none", color:"#475569", cursor:"pointer", display:"flex", padding:3 }}>
+                      style={{ width: "100%", padding: "0.65rem 2.6rem 0.65rem 0.9rem", background: "#0f1117", border: `1px solid ${errors.confirmPassword ? "#7f1d1d" : "#2d3448"}`, borderRadius: 9, color: "#e2e8f0", fontSize: "0.875rem", outline: "none", boxSizing: "border-box", fontFamily: "'Fira Mono','Consolas',monospace" }}
+                    />
+                    <button type="button" onClick={() => setShowCp(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", color: "#475569", cursor: "pointer", display: "flex", padding: 3 }}>
                       {showCp ? <Ic.EyeOff /> : <Ic.Eye />}
                     </button>
                   </div>
                   {formData.confirmPassword && formData.password && (
-                    <span style={{ fontSize:"0.72rem", fontWeight:600, color:formData.password === formData.confirmPassword ? "#c0dd97" : "#f87171" }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 600, color: formData.password === formData.confirmPassword ? "#c0dd97" : "#f87171" }}>
                       {formData.password === formData.confirmPassword ? "✓ Passwords match" : "✗ Do not match"}
                     </span>
                   )}
@@ -381,10 +523,20 @@ export default function EditModal({
           </div>
         </div>
 
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:10, padding:"1rem 1.5rem", borderTop:"1px solid #1e2535", background:"#131720", borderRadius:"0 0 16px 16px", flexShrink:0 }}>
-          <button onClick={onClose} disabled={loading} style={{ padding:"0.55rem 1.2rem", background:"transparent", border:"1px solid #2d3448", borderRadius:9, color:"#94a3b8", fontSize:"0.875rem", fontWeight:500, cursor:"pointer" }}>Cancel</button>
-          <button onClick={() => { if (validate()) onSave(); }} disabled={loading}
-            style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"0.58rem 1.3rem", background: loading ? "#2a3d14" : "#3b6d11", border:"1px solid #639922", borderRadius:9, color:"#c0dd97", fontSize:"0.875rem", fontWeight:600, cursor:loading ? "not-allowed" : "pointer", opacity:loading ? 0.8 : 1 }}>
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, padding: "1rem 1.5rem", borderTop: "1px solid #1e2535", background: "#131720", borderRadius: "0 0 16px 16px", flexShrink: 0 }}>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            style={{ padding: "0.55rem 1.2rem", background: "transparent", border: "1px solid #2d3448", borderRadius: 9, color: "#94a3b8", fontSize: "0.875rem", fontWeight: 500, cursor: "pointer" }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { if (validate()) onSave(); }}
+            disabled={loading}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "0.58rem 1.3rem", background: loading ? "#2a3d14" : "#3b6d11", border: "1px solid #639922", borderRadius: 9, color: "#c0dd97", fontSize: "0.875rem", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.8 : 1 }}
+          >
             {loading ? <><Ic.Loader />Saving…</> : <><Ic.Save />Save Changes</>}
           </button>
         </div>
