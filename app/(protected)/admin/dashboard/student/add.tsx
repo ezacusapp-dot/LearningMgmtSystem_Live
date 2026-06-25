@@ -169,7 +169,7 @@ const [errors, setErrors]  = useState<Record<string, string>>({});
 
   const validate = () => {
     
-    const errs = {};
+   const errs: Record<string, string> = {};
     if (!formData.name.trim())         errs.name = "Student name is required";
     if (!formData.email.trim())        errs.email = "Email is required";
     else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email))
