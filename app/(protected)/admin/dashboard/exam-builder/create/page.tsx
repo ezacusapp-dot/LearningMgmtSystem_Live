@@ -267,7 +267,7 @@ export default function CreateExamPage() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<ExamForm>({
     title: "",
-    description: "",
+    dsectionsescription: "",
     courseId: "",
     examType: "MOCK",
     totalMarks: "",
@@ -324,7 +324,7 @@ export default function CreateExamPage() {
     try {
       const response = await examsApi.create({
         title: form.title,
-        description: form.description || null,
+        description: form.dsectionsescription || null,
         courseId: form.courseId,
         examType: form.examType,
         totalMarks: parseInt(form.totalMarks),
@@ -388,7 +388,7 @@ export default function CreateExamPage() {
             {/* Description */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Description (Optional)</label>
-              <textarea rows={3} placeholder="Describe the exam..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 resize-none" />
+              <textarea rows={3} placeholder="Describe the exam..." value={form.dsectionsescription} onChange={(e) => setForm({ ...form, dsectionsescription: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 resize-none" />
             </div>
 
             {/* Exam Type */}
