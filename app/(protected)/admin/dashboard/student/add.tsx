@@ -70,7 +70,7 @@ const Ic = {
 };
 
 // ─── UI Primitives ──────────────────────────────────────────────────────────
-function Field({ label, icon, required, error, children, hint }) {
+function Field({ label, icon, required, error, children, hint = undefined }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
       <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:"0.75rem", fontWeight:600, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.04em" }}>
