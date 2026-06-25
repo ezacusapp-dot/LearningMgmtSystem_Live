@@ -15,11 +15,19 @@ const MODULE_TYPES = [
 const OPTION_LABELS = ["A", "B", "C", "D"];
 
 const DEFAULT_RULES = [
-  { id: "r1", label: "Require Module Completion",  desc: "Students must complete all lessons before proceeding to the next module" },
-  { id: "r2", label: "Require Test Pass (60%)",    desc: "Students must pass intermediate tests to continue to the next module"    },
-  { id: "r3", label: "Allow Course Retake",        desc: "Students can retake the entire course if they fail"                      },
+  { id: "r1", label: "Require Module Completion",  desc: "Students must complete all lessons before proceeding to the next module", enabled: true },
+  { id: "r2", label: "Require Test Pass (60%)",    desc: "Students must pass intermediate tests to continue to the next module", enabled: true },
+  { id: "r3", label: "Allow Course Retake",        desc: "Students can retake the entire course if they fail", enabled: true },
 ];
 
+// Also update the interface/type for rules if you have one defined elsewhere
+// If not, you can define it at the top:
+interface Rule {
+  id: string;
+  label: string;
+  desc: string;
+  enabled: boolean;
+}
 // ─── Transformer — same logic as edit page ────────────────────────────────────
 
 function transformCourseToViewState(course) {
