@@ -138,7 +138,7 @@ export default function AddModal({
   gradeOptions,
   schoolOptions,
 }) {
-  const [errors, setErrors]  = useState({});
+const [errors, setErrors]  = useState<Record<string, string>>({});
   const [showPw, setShowPw]  = useState(false);
   const [showCp, setShowCp]  = useState(false);
 

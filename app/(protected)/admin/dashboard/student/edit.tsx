@@ -217,7 +217,7 @@ export default function EditModal({
   schoolOptions,
 }: EditModalProps) {
   // ✅ Fix: typed as Record<string, string> so dynamic key deletion is allowed
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors]  = useState<Record<string, string>>({});
   const [showPw, setShowPw] = useState(false);
   const [showCp, setShowCp] = useState(false);
 
