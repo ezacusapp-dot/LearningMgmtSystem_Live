@@ -52,24 +52,31 @@ function buildQuestionsCreate(
   questions: NonNullable<CreateExamDto["questions"]>,
   sectionId?: string
 ) {
-  return questions.map((q) => ({
-    question: q.question,
-    inputMode: (q.inputMode ?? "text") as any,
-    questionImage: q.inputMode === "image" ? (q.questionImage ?? null) : null,
-    codeSnippet: q.codeSnippet ?? null,
-    codeLanguage: q.codeLanguage ?? null,
-    explanation: q.explanation ?? null,
-    explanationImage: q.explanationImage ?? null,
-    points: q.points,
-    difficulty: (q.difficulty ?? null) as any,
-    bloomLevel: (q.bloomLevel ?? null) as any,
-    questionType: (q.questionType ?? null) as any,
-    order: q.order,
-    sectionId: sectionId || q.sectionId || null,
-    options: {
-      create: buildOptionsCreate(q.options),
-    },
-  }));
+  return questions.map((q) => {
+    const base = {
+      question: q.question,
+      inputMode: (q.inputMode ?? "text") as any,
+      questionImage: q.inputMode === "image" ? (q.questionImage ?? null) : null,
+      codeSnippet: q.codeSnippet ?? null,
+      codeLanguage: q.codeLanguage ?? null,
+      explanation: q.explanation ?? null,
+      explanationImage: q.explanationImage ?? null,
+      points: q.points,
+      difficulty: (q.difficulty ?? null) as any,
+      bloomLevel: (q.bloomLevel ?? null) as any,
+      questionType: (q.questionType ?? null) as any,
+      order: q.order,
+      options: {
+        create: buildOptionsCreate(q.options),
+      },
+    };
+    // Only attach sectionId when creating questions at the top level (not nested inside a section)
+    const resolvedSectionId = sectionId || q.sectionId || null;
+    if (resolvedSectionId) {
+      return { ...base, sectionId: resolvedSectionId };
+    }
+    return base;
+  });
 }
 
 function buildSectionsCreate(sections: NonNullable<CreateExamDto["sections"]>) {
