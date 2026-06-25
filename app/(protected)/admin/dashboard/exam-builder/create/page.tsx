@@ -1,214 +1,482 @@
+// "use client";
+
+// import { useState } from "react";
+// import { useRouter } from "next/navigation";
+
+// interface ExamForm {
+//   title: string;
+//   course: string;
+//   totalMarks: string;
+//   passingMarks: string;
+//   duration: string;
+//   status: "Active" | "Inactive";
+// }
+
+// // Available courses for dropdown
+// const availableCourses = [
+//   "Java",
+//   "Web",
+//   "Python",
+//   "JavaScript",
+//   "React",
+//   "Node.js",
+//   "Database",
+//   "DevOps",
+//   "Cloud Computing",
+//   "Data Science"
+// ];
+
+// export default function CreateExamPage() {
+//   const router = useRouter();
+//   const [form, setForm] = useState<ExamForm>({
+//     title: "",
+//     course: "",
+//     totalMarks: "",
+//     passingMarks: "",
+//     duration: "",
+//     status: "Active",
+//   });
+
+//   const [errors, setErrors] = useState<Partial<ExamForm>>({});
+//   const [customCourse, setCustomCourse] = useState("");
+//   const [showCustomInput, setShowCustomInput] = useState(false);
+
+//   const validate = () => {
+//     const e: Partial<ExamForm> = {};
+//     if (!form.title.trim()) e.title = "Title is required";
+//     if (!form.course.trim()) e.course = "Course is required";
+//     if (!form.totalMarks.trim()) e.totalMarks = "Total marks required";
+//     if (!form.passingMarks.trim()) e.passingMarks = "Passing marks required";
+//     if (!form.duration.trim()) e.duration = "Duration is required";
+//     setErrors(e);
+//     return Object.keys(e).length === 0;
+//   };
+
+//   const handleSubmit = () => {
+//     if (validate()) {
+//       // Store exam data in localStorage to use in questions page
+//       localStorage.setItem("tempExamData", JSON.stringify(form));
+//       router.push("/admin/dashboard/exam-builder/create/questions");
+//     }
+//   };
+
+//   const handleCourseSelect = (course: string) => {
+//     if (course === "other") {
+//       setShowCustomInput(true);
+//       setForm({ ...form, course: "" });
+//     } else {
+//       setShowCustomInput(false);
+//       setForm({ ...form, course: course });
+//     }
+//   };
+
+//   const handleCustomCourse = (value: string) => {
+//     setCustomCourse(value);
+//     setForm({ ...form, course: value });
+//   };
+
+//   const field = (
+//     label: string,
+//     key: keyof ExamForm,
+//     placeholder: string,
+//     type = "text"
+//   ) => (
+//     <div className="flex flex-col gap-1.5">
+//       <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+//         {label}
+//       </label>
+//       <input
+//         type={type}
+//         placeholder={placeholder}
+//         value={form[key] as string}
+//         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+//         className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
+//       />
+//       {errors[key] && (
+//         <p className="text-red-400 text-xs mt-0.5">{errors[key]}</p>
+//       )}
+//     </div>
+//   );
+
+//   return (
+//     <div className="min-h-screen bg-[#0a0c12] text-white font-sans">
+//       {/* Ambient glow */}
+//       <div className="fixed inset-0 pointer-events-none">
+//         <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/8 rounded-full blur-3xl" />
+//         <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-indigo-600/6 rounded-full blur-3xl" />
+//       </div>
+
+//       <div className="relative max-w-4xl mx-auto px-6 py-10">
+//         {/* Header with back button */}
+//         <div className="flex items-center gap-4 mb-8">
+//           <button
+//             onClick={() => router.push('/admin/dashboard/master/exam-builder')}
+//             className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+//           >
+//             <span className="text-2xl">←</span>
+//           </button>
+//           <div>
+//             <h1 className="text-3xl font-extrabold tracking-tight text-white">
+//               Create New Exam
+//             </h1>
+//             <p className="text-slate-500 text-sm mt-1">
+//               Fill in the basic information about the exam
+//             </p>
+//           </div>
+//         </div>
+
+//         {/* Form Card */}
+//         <div className="bg-[#0f1117]/80 border border-white/8 rounded-2xl backdrop-blur-sm overflow-hidden">
+//           <div className="px-6 py-6 flex flex-col gap-5">
+//             {field("Exam Title", "title", "e.g. Java Fundamentals")}
+            
+//             {/* Course Dropdown */}
+//             <div className="flex flex-col gap-1.5">
+//               <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+//                 Course
+//               </label>
+//               <select
+//                 value={showCustomInput ? "other" : form.course}
+//                 onChange={(e) => handleCourseSelect(e.target.value)}
+//                 className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
+//               >
+//                 <option value="">Select a course</option>
+//                 {availableCourses.map((course) => (
+//                   <option key={course} value={course}>
+//                     {course}
+//                   </option>
+//                 ))}
+//                 <option value="other">+ Add Custom Course</option>
+//               </select>
+              
+//               {showCustomInput && (
+//                 <input
+//                   type="text"
+//                   placeholder="Enter course name"
+//                   value={customCourse}
+//                   onChange={(e) => handleCustomCourse(e.target.value)}
+//                   className="mt-2 w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
+//                 />
+//               )}
+              
+//               {errors.course && (
+//                 <p className="text-red-400 text-xs mt-0.5">{errors.course}</p>
+//               )}
+//             </div>
+
+//             <div className="grid grid-cols-2 gap-4">
+//               {field("Total Marks", "totalMarks", "e.g. 100", "number")}
+//               {field("Passing Marks", "passingMarks", "e.g. 40", "number")}
+//             </div>
+
+//             {/* Duration */}
+//             <div className="flex flex-col gap-1.5">
+//               <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+//                 Exam Time (minutes)
+//               </label>
+//               <div className="relative">
+//                 <input
+//                   type="number"
+//                   placeholder="e.g. 30"
+//                   value={form.duration}
+//                   onChange={(e) => setForm({ ...form, duration: e.target.value })}
+//                   className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 pr-16 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
+//                 />
+//                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-medium">
+//                   min
+//                 </span>
+//               </div>
+//               {errors.duration && (
+//                 <p className="text-red-400 text-xs mt-0.5">{errors.duration}</p>
+//               )}
+//             </div>
+
+//             {/* Status */}
+//             <div className="flex flex-col gap-1.5">
+//               <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+//                 Status
+//               </label>
+//               <div className="flex gap-3">
+//                 {(["Active", "Inactive"] as const).map((s) => (
+//                   <button
+//                     key={s}
+//                     onClick={() => setForm({ ...form, status: s })}
+//                     className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+//                       form.status === s
+//                         ? s === "Active"
+//                           ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-400"
+//                           : "bg-red-500/20 border-red-500/60 text-red-400"
+//                         : "bg-white/5 border-white/10 text-slate-500 hover:border-white/20"
+//                     }`}
+//                   >
+//                     {s}
+//                   </button>
+//                 ))}
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="px-6 py-4 border-t border-white/8 flex justify-end">
+//             <button
+//               onClick={handleSubmit}
+//               className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-all shadow-lg shadow-violet-700/30 flex items-center gap-2"
+//             >
+//               Next: Add Questions
+//               <span className="text-lg">→</span>
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// app/admin/dashboard/exam-builder/create/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { examsApi } from "app/api/exams/exams";
 
 interface ExamForm {
   title: string;
-  course: string;
+  dsectionsescription: string;
+  courseId: string;
+  examType: "MOCK" | "FINAL";
   totalMarks: string;
   passingMarks: string;
   duration: string;
-  status: "Active" | "Inactive";
+  maxAttempts: string;
+  showAnswers: boolean;
+  showExplanations: boolean;
+  randomizeQuestions: boolean;
+  status: "Draft" | "Active" | "Inactive";
+  startDate: string;
+  endDate: string;
 }
 
-// Available courses for dropdown
-const availableCourses = [
-  "Java",
-  "Web",
-  "Python",
-  "JavaScript",
-  "React",
-  "Node.js",
-  "Database",
-  "DevOps",
-  "Cloud Computing",
-  "Data Science"
-];
+interface Course {
+  id: string;
+  title: string;
+}
 
 export default function CreateExamPage() {
   const router = useRouter();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<ExamForm>({
     title: "",
-    course: "",
+    description: "",
+    courseId: "",
+    examType: "MOCK",
     totalMarks: "",
     passingMarks: "",
     duration: "",
-    status: "Active",
+    maxAttempts: "3",
+    showAnswers: false,
+    showExplanations: false,
+    randomizeQuestions: false,
+    status: "Draft",
+    startDate: "",
+    endDate: "",
   });
-
   const [errors, setErrors] = useState<Partial<ExamForm>>({});
-  const [customCourse, setCustomCourse] = useState("");
-  const [showCustomInput, setShowCustomInput] = useState(false);
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const response = await examsApi.getCourses();
+        if (response.status && response.data) {
+          setCourses(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load courses:", error);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    loadCourses();
+  }, []);
 
   const validate = () => {
     const e: Partial<ExamForm> = {};
     if (!form.title.trim()) e.title = "Title is required";
-    if (!form.course.trim()) e.course = "Course is required";
-    if (!form.totalMarks.trim()) e.totalMarks = "Total marks required";
-    if (!form.passingMarks.trim()) e.passingMarks = "Passing marks required";
-    if (!form.duration.trim()) e.duration = "Duration is required";
+    if (!form.courseId) e.courseId = "Course is required";
+    if (!form.totalMarks) e.totalMarks = "Total marks required";
+    if (!form.passingMarks) e.passingMarks = "Passing marks required";
+    if (!form.duration) e.duration = "Duration is required";
+    
+    const total = parseInt(form.totalMarks);
+    const passing = parseInt(form.passingMarks);
+    if (total && passing && passing > total) {
+      e.passingMarks = "Passing marks cannot exceed total marks";
+    }
+    
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validate()) {
-      // Store exam data in localStorage to use in questions page
-      localStorage.setItem("tempExamData", JSON.stringify(form));
-      router.push("/admin/dashboard/exam-builder/create/questions");
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    
+    setSubmitting(true);
+    try {
+      const response = await examsApi.create({
+        title: form.title,
+        description: form.description || null,
+        courseId: form.courseId,
+        examType: form.examType,
+        totalMarks: parseInt(form.totalMarks),
+        passingMarks: parseInt(form.passingMarks),
+        duration: parseInt(form.duration),
+        maxAttempts: parseInt(form.maxAttempts),
+        showAnswers: form.showAnswers,
+        showExplanations: form.showExplanations,
+        randomizeQuestions: form.randomizeQuestions,
+        status: form.status,
+        startDate: form.startDate || null,
+        endDate: form.endDate || null,
+      });
+      
+      if (response.status) {
+        localStorage.setItem("currentExamId", response.data.id);
+        const addSections = confirm("Would you like to organize your exam into sections?");
+        if (addSections) {
+          router.push(`/admin/dashboard/exam-builder/create/sections?examId=${response.data.id}`);
+        } else {
+          router.push("/admin/dashboard/exam-builder/create/questions");
+        }
+      } else {
+        alert(response.message || "Failed to create exam");
+      }
+    } catch (error) {
+      console.error("Create exam error:", error);
+      alert("An error occurred while creating the exam");
+    } finally {
+      setSubmitting(false);
     }
   };
-
-  const handleCourseSelect = (course: string) => {
-    if (course === "other") {
-      setShowCustomInput(true);
-      setForm({ ...form, course: "" });
-    } else {
-      setShowCustomInput(false);
-      setForm({ ...form, course: course });
-    }
-  };
-
-  const handleCustomCourse = (value: string) => {
-    setCustomCourse(value);
-    setForm({ ...form, course: value });
-  };
-
-  const field = (
-    label: string,
-    key: keyof ExamForm,
-    placeholder: string,
-    type = "text"
-  ) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-        {label}
-      </label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        value={form[key] as string}
-        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
-      />
-      {errors[key] && (
-        <p className="text-red-400 text-xs mt-0.5">{errors[key]}</p>
-      )}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-[#0a0c12] text-white font-sans">
-      {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/8 rounded-full blur-3xl" />
         <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-indigo-600/6 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-4xl mx-auto px-6 py-10">
-        {/* Header with back button */}
         <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.push('/admin/dashboard/master/exam-builder')}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-          >
+          <button onClick={() => router.push('/admin/dashboard/exam-builder')} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
             <span className="text-2xl">←</span>
           </button>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">
-              Create New Exam
-            </h1>
-            <p className="text-slate-500 text-sm mt-1">
-              Fill in the basic information about the exam
-            </p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">Create New Exam</h1>
+            <p className="text-slate-500 text-sm mt-1">Fill in the basic information about the exam</p>
           </div>
         </div>
 
-        {/* Form Card */}
         <div className="bg-[#0f1117]/80 border border-white/8 rounded-2xl backdrop-blur-sm overflow-hidden">
           <div className="px-6 py-6 flex flex-col gap-5">
-            {field("Exam Title", "title", "e.g. Java Fundamentals")}
-            
-            {/* Course Dropdown */}
+            {/* Title */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Course
-              </label>
-              <select
-                value={showCustomInput ? "other" : form.course}
-                onChange={(e) => handleCourseSelect(e.target.value)}
-                className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
-              >
-                <option value="">Select a course</option>
-                {availableCourses.map((course) => (
-                  <option key={course} value={course}>
-                    {course}
-                  </option>
+              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Exam Title</label>
+              <input type="text" placeholder="e.g., Java Fundamentals" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500" />
+              {errors.title && <p className="text-red-400 text-xs mt-0.5">{errors.title}</p>}
+            </div>
+
+            {/* Description */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Description (Optional)</label>
+              <textarea rows={3} placeholder="Describe the exam..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 resize-none" />
+            </div>
+
+            {/* Exam Type */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Exam Type</label>
+              <div className="flex gap-3">
+                {(["MOCK", "FINAL"] as const).map((type) => (
+                  <button key={type} onClick={() => setForm({ ...form, examType: type })} className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${form.examType === type ? type === "MOCK" ? "bg-blue-500/20 border-blue-500/60 text-blue-400" : "bg-purple-500/20 border-purple-500/60 text-purple-400" : "bg-white/5 border-white/10 text-slate-500 hover:border-white/20"}`}>
+                    {type === "MOCK" ? "Mock Test" : "Final Exam"}
+                  </button>
                 ))}
-                <option value="other">+ Add Custom Course</option>
-              </select>
-              
-              {showCustomInput && (
-                <input
-                  type="text"
-                  placeholder="Enter course name"
-                  value={customCourse}
-                  onChange={(e) => handleCustomCourse(e.target.value)}
-                  className="mt-2 w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
-                />
-              )}
-              
-              {errors.course && (
-                <p className="text-red-400 text-xs mt-0.5">{errors.course}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {field("Total Marks", "totalMarks", "e.g. 100", "number")}
-              {field("Passing Marks", "passingMarks", "e.g. 40", "number")}
-            </div>
-
-            {/* Duration */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Exam Time (minutes)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="e.g. 30"
-                  value={form.duration}
-                  onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                  className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 pr-16 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 transition-all"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-medium">
-                  min
-                </span>
               </div>
-              {errors.duration && (
-                <p className="text-red-400 text-xs mt-0.5">{errors.duration}</p>
-              )}
+            </div>
+
+            {/* Course */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Course</label>
+              <select value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" disabled={loadingCourses}>
+                <option value="">Select a course</option>
+                {courses.map((course) => (<option key={course.id} value={course.id}>{course.title}</option>))}
+              </select>
+              {errors.courseId && <p className="text-red-400 text-xs mt-0.5">{errors.courseId}</p>}
+            </div>
+
+            {/* Marks */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Total Marks</label>
+                <input type="number" placeholder="e.g., 100" value={form.totalMarks} onChange={(e) => setForm({ ...form, totalMarks: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
+                {errors.totalMarks && <p className="text-red-400 text-xs mt-0.5">{errors.totalMarks}</p>}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Passing Marks</label>
+                <input type="number" placeholder="e.g., 40" value={form.passingMarks} onChange={(e) => setForm({ ...form, passingMarks: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
+                {errors.passingMarks && <p className="text-red-400 text-xs mt-0.5">{errors.passingMarks}</p>}
+              </div>
+            </div>
+
+            {/* Duration & Attempts */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Duration (minutes)</label>
+                <input type="number" placeholder="e.g., 60" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
+                {errors.duration && <p className="text-red-400 text-xs mt-0.5">{errors.duration}</p>}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Max Attempts</label>
+                <input type="number" placeholder="e.g., 3" value={form.maxAttempts} onChange={(e) => setForm({ ...form, maxAttempts: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
+              </div>
+            </div>
+
+            {/* Settings */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Exam Settings</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={form.showAnswers} onChange={(e) => setForm({ ...form, showAnswers: e.target.checked })} className="w-4 h-4 rounded border-white/20 bg-[#0f1117] accent-violet-500" />
+                  <span className="text-sm text-slate-300">Show answers after completion</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={form.showExplanations} onChange={(e) => setForm({ ...form, showExplanations: e.target.checked })} className="w-4 h-4 rounded border-white/20 bg-[#0f1117] accent-violet-500" />
+                  <span className="text-sm text-slate-300">Show explanations</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={form.randomizeQuestions} onChange={(e) => setForm({ ...form, randomizeQuestions: e.target.checked })} className="w-4 h-4 rounded border-white/20 bg-[#0f1117] accent-violet-500" />
+                  <span className="text-sm text-slate-300">Randomize question order</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Scheduling */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Start Date (Optional)</label>
+                <input type="datetime-local" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">End Date (Optional)</label>
+                <input type="datetime-local" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
+              </div>
             </div>
 
             {/* Status */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                Status
-              </label>
+              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Status</label>
               <div className="flex gap-3">
-                {(["Active", "Inactive"] as const).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setForm({ ...form, status: s })}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                      form.status === s
-                        ? s === "Active"
-                          ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-400"
-                          : "bg-red-500/20 border-red-500/60 text-red-400"
-                        : "bg-white/5 border-white/10 text-slate-500 hover:border-white/20"
-                    }`}
-                  >
+                {(["Draft", "Active", "Inactive"] as const).map((s) => (
+                  <button key={s} onClick={() => setForm({ ...form, status: s })} className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${form.status === s ? s === "Active" ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-400" : s === "Draft" ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-400" : "bg-red-500/20 border-red-500/60 text-red-400" : "bg-white/5 border-white/10 text-slate-500 hover:border-white/20"}`}>
                     {s}
                   </button>
                 ))}
@@ -217,12 +485,8 @@ export default function CreateExamPage() {
           </div>
 
           <div className="px-6 py-4 border-t border-white/8 flex justify-end">
-            <button
-              onClick={handleSubmit}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-all shadow-lg shadow-violet-700/30 flex items-center gap-2"
-            >
-              Next: Add Questions
-              <span className="text-lg">→</span>
+            <button onClick={handleSubmit} disabled={submitting} className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-all shadow-lg shadow-violet-700/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              {submitting ? "Creating..." : "Next: Add Sections/Questions"} <span className="text-lg">→</span>
             </button>
           </div>
         </div>

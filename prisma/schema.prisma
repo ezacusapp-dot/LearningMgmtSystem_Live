@@ -9,9 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================
-// ENUMS
-// ============================================================
 
 enum ModuleType {
   LESSON
@@ -56,7 +53,8 @@ enum CourseStatus {
 enum Difficulty {
   Easy
   Medium
-  Hard
+  Difficult
+  Challenging
 }
 
 enum BloomLevel {
@@ -70,9 +68,9 @@ enum BloomLevel {
 
 enum QuestionType {
   Conceptual
-  OutputPrediction
-  ProblemSolving
+  Prediction
   Debugging
+  ProblemSolving
 }
 
 enum InputMode {
@@ -87,11 +85,60 @@ enum SubscriptionStatus {
 }
 
 // ============================================================
+// EXAM ENUMS - ADD THESE
+// ============================================================
+
+enum ExamType {
+  MOCK
+  FINAL
+}
+
+enum ExamStatus {
+  Active
+  Inactive
+  Draft
+  Archived
+}
+
+enum ExamDifficulty {
+  Easy
+  Medium
+  Difficult
+  Challenging
+}
+
+enum ExamQuestionType {
+  Conceptual
+  Prediction
+  Debugging
+  ProblemSolving
+}
+
+enum ExamBloomLevel {
+  Remember
+  Understand
+  Apply
+  Analyze
+  Evaluate
+  Create
+}
+
+enum ExamInputMode {
+  text
+  image
+  code
+}
+
+// ============================================================
+// EXAMS SECTION - Place this after your existing models
+// ============================================================
+
+// ============================================================
 // MODELS
 // ============================================================
 
 model School {
-  id           String             @id @default(uuid())
+  id           String            @id @default(cuid())
   name         String             @unique
   adminName    String
   adminEmail   String             @unique
@@ -155,7 +202,7 @@ model AwardCategory {
 }
 
 model ValidityPeriod {
-  id        String   @id @default(uuid())
+  id        String    @id @default(cuid())
   name      String   @unique
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
@@ -166,7 +213,7 @@ model ValidityPeriod {
 }
 
 model Grade {
-  id        String   @id @default(uuid())
+  id        String    @id @default(cuid())
   name      String   @unique
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
@@ -237,7 +284,7 @@ model CertificateTemplate {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String    @id @default(cuid())
   name      String
   email     String   @unique
   password  String
@@ -256,7 +303,7 @@ model User {
 }
 
 model Session {
-  id        String   @id @default(uuid())
+  id        String    @id @default(cuid())
   userId    String
   token     String   @unique
   expiresAt DateTime
@@ -268,7 +315,7 @@ model Session {
 }
 
 model Courses {
-  id          String  @id @default(uuid())
+  id          String   @id @default(cuid())
   title       String
   description String?
 
@@ -289,6 +336,7 @@ model Courses {
   modules     Modules[]
   enrollments UserCourseEnrollment[]
   grades      CourseGrade[]
+    exams  Exam[] 
 
   @@map("courses")
 }
@@ -304,7 +352,7 @@ model CourseGrade {
 }
 
 model Modules {
-  id          String     @id @default(uuid())
+  id          String      @id @default(cuid())
   courseId    String
   title       String
   type        ModuleType @default(LESSON)
@@ -327,7 +375,7 @@ model Modules {
 }
 
 model Lessons {
-  id          String      @id @default(uuid())
+  id          String       @id @default(cuid())
   moduleId    String
   title       String
   contentType ContentType
@@ -346,7 +394,7 @@ model Lessons {
 }
 
 model Revision {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   moduleId  String   @unique
   title     String?
   isActive  Boolean  @default(true)
@@ -360,7 +408,7 @@ model Revision {
 }
 
 model RevisionContent {
-  id          String              @id @default(uuid())
+  id          String               @id @default(cuid())
   revisionId  String
   contentType RevisionContentType
   fileUrl     String
@@ -375,7 +423,7 @@ model RevisionContent {
 }
 
 model Quiz {
-  id           String   @id @default(uuid())
+  id           String    @id @default(cuid())
   moduleId     String   @unique
   passingMarks Int
   totalMarks   Int
@@ -392,7 +440,7 @@ model Quiz {
 }
 
 model Question {
-  id           String        @id @default(uuid())
+  id           String        @id @default(cuid())
   quizId       String
   question     String
   order        Int
@@ -419,7 +467,7 @@ model Question {
 }
 
 model Option {
-  id         String   @id @default(uuid())
+  id         String    @id @default(cuid())
   questionId String
   text       String
   isCorrect  Boolean
@@ -443,7 +491,7 @@ model Option {
 // ============================================================
 
 model UserCourseEnrollment {
-  id         String    @id @default(uuid())
+  id         String     @id @default(cuid())
   userId     String
   courseId   String
   isActive   Boolean   @default(true)
@@ -467,7 +515,7 @@ model UserCourseEnrollment {
 }
 
 model UserModuleProgress {
-  id          String    @id @default(uuid())
+  id          String    @id @default(cuid())
   userId      String
   moduleId    String
   isCompleted Boolean   @default(false)
@@ -485,7 +533,7 @@ model UserModuleProgress {
 
 
 model UserLessonProgress {
-  id           String    @id @default(uuid())
+  id           String    @id @default(cuid())
   userId       String
   lessonId     String
   enrollmentId String?                          // ← add this
@@ -505,7 +553,7 @@ model UserLessonProgress {
 
 
 model UserQuizAttempt {
-  id           String   @id @default(uuid())
+  id           String   @id @default(cuid())
   userId       String
   quizId       String
   enrollmentId String?                          // ← add this
@@ -527,7 +575,7 @@ model UserQuizAttempt {
 }
 
 model UserQuizAnswer {
-  id         String   @id @default(uuid())
+  id         String   @id @default(cuid())
   attemptId  String
   questionId String
   optionId   String
@@ -560,4 +608,205 @@ model Student {
   address       String?
   role          UserRole @default(STUDENT)
   createdAt     DateTime @default(now())
+}
+// ============================================================
+// EXAMS SECTION - Corrected
+// ============================================================
+
+// Exam Section Template for reusability
+model ExamSectionTemplate {
+  id           String    @id @default(cuid())
+  name         String
+  description  String?   @db.Text
+  isActive     Boolean   @default(true)
+  createdBy    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  sections     ExamSectionTemplateItem[]
+  
+  @@map("exam_section_templates")
+}
+
+model ExamSectionTemplateItem {
+  id              String    @id @default(cuid())
+  templateId      String
+  title           String
+  description     String?   @db.Text
+  order           Int
+  difficulty      ExamDifficulty
+  questionType    ExamQuestionType?
+  defaultMarks    Int
+  defaultQuestions Int
+  timeLimit       Int?
+  
+  template        ExamSectionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  @@unique([templateId, order])
+  @@map("exam_section_template_items")
+}
+
+model Exam {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?     @db.Text
+  courseId     String?
+  examType     ExamType    @default(MOCK)
+  totalMarks   Int         @default(0)
+  passingMarks Int         @default(0)
+  duration     Int
+  status       ExamStatus  @default(Draft)  // Fixed: Draft not DRAFT
+  createdBy    String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  publishedAt  DateTime?
+  
+  maxAttempts         Int     @default(3)
+  showAnswers         Boolean @default(false)
+  showExplanations    Boolean @default(false)
+  randomizeQuestions  Boolean @default(false)
+  requireProctoring   Boolean @default(false)
+  
+  startDate    DateTime?
+  endDate      DateTime?
+  
+  course    Courses?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  sections  ExamSection[]
+  questions ExamQuestion[]
+  attempts  ExamAttempt[]
+
+  @@index([courseId])
+  @@index([examType])
+  @@index([status])
+  @@map("exams")
+}
+
+model ExamSection {
+  id           String    @id @default(cuid())
+  examId       String
+  title        String
+  description  String?   @db.Text
+  order        Int
+  difficulty   ExamDifficulty
+  questionType ExamQuestionType?
+  totalMarks   Int
+  passingMarks Int?
+  timeLimit    Int?
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  exam         Exam              @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questions    ExamQuestion[]
+  sectionScores ExamSectionScore[]
+  
+  @@unique([examId, order])
+  @@index([examId])
+  @@map("exam_sections")
+}
+
+model ExamQuestion {
+  id           String            @id @default(cuid())
+  examId       String
+  sectionId    String?
+  question     String            @db.Text
+  inputMode    ExamInputMode     @default(text)
+  questionImage String?          @db.Text
+  codeSnippet  String?           @db.Text
+  codeLanguage String?
+  explanation  String?           @db.Text
+  explanationImage String?       @db.Text
+  points       Int               @default(1)
+  difficulty   ExamDifficulty?
+  bloomLevel   ExamBloomLevel?
+  questionType ExamQuestionType?
+  order        Int
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  exam    Exam               @relation(fields: [examId], references: [id], onDelete: Cascade)
+  section ExamSection?       @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  options ExamOption[]
+  answers ExamAttemptAnswer[]
+
+  @@unique([examId, order])
+  @@index([examId])
+  @@index([sectionId])
+  @@map("exam_questions")
+}
+
+model ExamOption {
+  id         String        @id @default(cuid())
+  questionId String
+  text       String
+  inputMode  ExamInputMode @default(text)
+  imageData  String?       @db.Text
+  isCorrect  Boolean
+  order      Int
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  question ExamQuestion        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  ExamAttemptAnswer[]
+
+  @@index([questionId])
+  @@map("exam_options")
+}
+
+model ExamAttempt {
+  id         String   @id @default(uuid())
+  examId     String
+  userId     String?
+  score      Int
+  percentage Float?
+  isPassed   Boolean
+  timeTaken  Int?
+  startedAt  DateTime?
+  completedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  exam    Exam                @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers ExamAttemptAnswer[]
+  sectionScores ExamSectionScore[]
+
+  @@index([examId])
+  @@index([userId])
+  @@map("exam_attempts")
+}
+
+model ExamAttemptAnswer {
+  id         String    @id @default(cuid())
+  attemptId  String
+  questionId String
+  optionId   String
+  isCorrect  Boolean
+  timeSpent  Int?
+  createdAt  DateTime @default(now())
+
+  attempt  ExamAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question ExamQuestion @relation(fields: [questionId], references: [id])
+  option   ExamOption   @relation(fields: [optionId], references: [id])
+
+  @@index([attemptId])
+  @@map("exam_attempt_answers")
+}
+
+model ExamSectionScore {
+  id         String    @id @default(cuid())
+  attemptId  String
+  sectionId  String
+  score      Int
+  percentage Float
+  isPassed   Boolean?
+  totalQuestions Int
+  correctlyAnswered Int
+  createdAt  DateTime  @default(now())
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  section ExamSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, sectionId])
+  @@index([attemptId])
+  @@map("exam_section_scores")
 }

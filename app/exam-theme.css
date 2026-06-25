@@ -1,0 +1,43 @@
+/* ============================================================
+   Student Final Exam — Theme Tokens
+   "Answer Sheet" visual language: OMR-style bubbles, ledger
+   rules, and a wax-seal result stamp — echoes the platform's
+   certificate seal/branding (#49205E / #BC579E).
+   Import once in app/layout.tsx:  import "@/styles/exam-theme.css"
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  /* Brand */
+  --exam-primary: #49205e;
+  --exam-primary-light: #6f3a8c;
+  --exam-primary-tint: #f1e9f6;
+  --exam-accent: #bc579e;
+  --exam-accent-tint: #f8e6f1;
+
+  /* Surfaces */
+  --exam-bg: #faf7fb;
+  --exam-surface: #ffffff;
+  --exam-border: #e7dfee;
+  --exam-ink: #2a1b33;
+  --exam-muted: #8d7e96;
+
+  /* Status */
+  --exam-success: #1f8a5e;
+  --exam-success-tint: #e7f5ee;
+  --exam-danger: #c23b3b;
+  --exam-danger-tint: #fbeaea;
+  --exam-warning: #c9821e;
+  --exam-warning-tint: #fbf0e0;
+
+  /* Type */
+  --exam-font-display: "Sora", system-ui, sans-serif;
+  --exam-font-body: "Inter", system-ui, sans-serif;
+  --exam-font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --exam-radius-sm: 8px;
+  --exam-radius-md: 14px;
+  --exam-radius-lg: 22px;
+  --exam-shadow: 0 8px 30px -12px rgba(73, 32, 94, 0.25);
+}

@@ -32,7 +32,19 @@ CREATE TYPE "InputMode" AS ENUM ('text', 'image');
 CREATE TYPE "SubscriptionStatus" AS ENUM ('active', 'trial', 'expired');
 
 -- CreateEnum
-CREATE TYPE "CourseStatusEnum" AS ENUM ('Pending', 'InProcess', 'Complete');
+CREATE TYPE "ExamStatus" AS ENUM ('Active', 'Inactive');
+
+-- CreateEnum
+CREATE TYPE "ExamQuestionType" AS ENUM ('Conceptual', 'OutputPrediction', 'ProblemSolving', 'Debugging');
+
+-- CreateEnum
+CREATE TYPE "ExamBloomLevel" AS ENUM ('Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create');
+
+-- CreateEnum
+CREATE TYPE "ExamDifficulty" AS ENUM ('Easy', 'Medium', 'Hard');
+
+-- CreateEnum
+CREATE TYPE "ExamInputMode" AS ENUM ('text', 'image');
 
 -- CreateTable
 CREATE TABLE "schools" (
@@ -331,6 +343,8 @@ CREATE TABLE "user_course_enrollments" (
     "expiresAt" TIMESTAMP(3),
     "enrolledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "startDate" TIMESTAMP(3),
+    "endDate" TIMESTAMP(3),
 
     CONSTRAINT "user_course_enrollments_pkey" PRIMARY KEY ("id")
 );
@@ -352,6 +366,7 @@ CREATE TABLE "user_lesson_progress" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "lessonId" TEXT NOT NULL,
+    "enrollmentId" TEXT,
     "isCompleted" BOOLEAN NOT NULL DEFAULT false,
     "completedAt" TIMESTAMP(3),
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -364,6 +379,7 @@ CREATE TABLE "user_quiz_attempts" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "quizId" TEXT NOT NULL,
+    "enrollmentId" TEXT,
     "score" INTEGER NOT NULL,
     "isPassed" BOOLEAN NOT NULL,
     "timeTaken" INTEGER,
@@ -406,6 +422,85 @@ CREATE TABLE "Student" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "exams" (
+    "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "courseId" TEXT,
+    "totalMarks" INTEGER NOT NULL DEFAULT 0,
+    "passingMarks" INTEGER NOT NULL DEFAULT 0,
+    "duration" INTEGER NOT NULL,
+    "status" "ExamStatus" NOT NULL DEFAULT 'Active',
+    "createdBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "exams_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "exam_questions" (
+    "id" TEXT NOT NULL,
+    "examId" TEXT NOT NULL,
+    "question" TEXT NOT NULL,
+    "inputMode" "ExamInputMode" NOT NULL DEFAULT 'text',
+    "questionImage" TEXT,
+    "codeSnippet" TEXT,
+    "codeLanguage" TEXT,
+    "explanation" TEXT,
+    "explanationImage" TEXT,
+    "points" INTEGER NOT NULL DEFAULT 1,
+    "difficulty" "ExamDifficulty",
+    "bloomLevel" "ExamBloomLevel",
+    "questionType" "ExamQuestionType",
+    "order" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "exam_questions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "exam_options" (
+    "id" TEXT NOT NULL,
+    "questionId" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "inputMode" "ExamInputMode" NOT NULL DEFAULT 'text',
+    "imageData" TEXT,
+    "isCorrect" BOOLEAN NOT NULL,
+    "order" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "exam_options_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "exam_attempts" (
+    "id" TEXT NOT NULL,
+    "examId" TEXT NOT NULL,
+    "userId" TEXT,
+    "score" INTEGER NOT NULL,
+    "isPassed" BOOLEAN NOT NULL,
+    "timeTaken" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "exam_attempts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "exam_attempt_answers" (
+    "id" TEXT NOT NULL,
+    "attemptId" TEXT NOT NULL,
+    "questionId" TEXT NOT NULL,
+    "optionId" TEXT NOT NULL,
+    "isCorrect" BOOLEAN NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "exam_attempt_answers_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -502,10 +597,31 @@ CREATE INDEX "user_quiz_attempts_userId_idx" ON "user_quiz_attempts"("userId");
 CREATE INDEX "user_quiz_attempts_quizId_idx" ON "user_quiz_attempts"("quizId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "user_quiz_attempts_userId_quizId_key" ON "user_quiz_attempts"("userId", "quizId");
+
+-- CreateIndex
 CREATE INDEX "user_quiz_answers_attemptId_idx" ON "user_quiz_answers"("attemptId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Student_username_key" ON "Student"("username");
+
+-- CreateIndex
+CREATE INDEX "exams_courseId_idx" ON "exams"("courseId");
+
+-- CreateIndex
+CREATE INDEX "exam_questions_examId_idx" ON "exam_questions"("examId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "exam_questions_examId_order_key" ON "exam_questions"("examId", "order");
+
+-- CreateIndex
+CREATE INDEX "exam_options_questionId_idx" ON "exam_options"("questionId");
+
+-- CreateIndex
+CREATE INDEX "exam_attempts_examId_idx" ON "exam_attempts"("examId");
+
+-- CreateIndex
+CREATE INDEX "exam_attempt_answers_attemptId_idx" ON "exam_attempt_answers"("attemptId");
 
 -- AddForeignKey
 ALTER TABLE "course_categories" ADD CONSTRAINT "course_categories_levelId_fkey" FOREIGN KEY ("levelId") REFERENCES "course_levels"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -577,10 +693,16 @@ ALTER TABLE "user_lesson_progress" ADD CONSTRAINT "user_lesson_progress_userId_f
 ALTER TABLE "user_lesson_progress" ADD CONSTRAINT "user_lesson_progress_lessonId_fkey" FOREIGN KEY ("lessonId") REFERENCES "lessons"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "user_lesson_progress" ADD CONSTRAINT "user_lesson_progress_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "user_course_enrollments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "user_quiz_attempts" ADD CONSTRAINT "user_quiz_attempts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_quiz_attempts" ADD CONSTRAINT "user_quiz_attempts_quizId_fkey" FOREIGN KEY ("quizId") REFERENCES "quizzes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_quiz_attempts" ADD CONSTRAINT "user_quiz_attempts_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "user_course_enrollments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_quiz_answers" ADD CONSTRAINT "user_quiz_answers_attemptId_fkey" FOREIGN KEY ("attemptId") REFERENCES "user_quiz_attempts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -590,3 +712,24 @@ ALTER TABLE "user_quiz_answers" ADD CONSTRAINT "user_quiz_answers_questionId_fke
 
 -- AddForeignKey
 ALTER TABLE "user_quiz_answers" ADD CONSTRAINT "user_quiz_answers_optionId_fkey" FOREIGN KEY ("optionId") REFERENCES "options"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exams" ADD CONSTRAINT "exams_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exam_questions" ADD CONSTRAINT "exam_questions_examId_fkey" FOREIGN KEY ("examId") REFERENCES "exams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exam_options" ADD CONSTRAINT "exam_options_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "exam_questions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exam_attempts" ADD CONSTRAINT "exam_attempts_examId_fkey" FOREIGN KEY ("examId") REFERENCES "exams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exam_attempt_answers" ADD CONSTRAINT "exam_attempt_answers_attemptId_fkey" FOREIGN KEY ("attemptId") REFERENCES "exam_attempts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exam_attempt_answers" ADD CONSTRAINT "exam_attempt_answers_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "exam_questions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exam_attempt_answers" ADD CONSTRAINT "exam_attempt_answers_optionId_fkey" FOREIGN KEY ("optionId") REFERENCES "exam_options"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

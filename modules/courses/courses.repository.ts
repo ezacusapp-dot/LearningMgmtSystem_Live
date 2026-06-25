@@ -355,14 +355,13 @@ export const createCourseRepo = (data: CreateCourseDto) => {
 // ─── UPDATE (full — replaces grades + modules) ────────────────────────────────
 // REPLACE the existing updateCourseFullRepo function with this version.
 
+// ─── UPDATE (full — replaces grades + modules) ────────────────────────────────
+
 export const updateCourseFullRepo = async (id: string, data: CreateCourseDto) => {
   const { modules, gradeIds, ...courseData } = data;
 
   return prisma.$transaction(async (tx) => {
     // 1. Update scalar course fields + replace grades
-    //    Prisma requires relation fields, not raw FK strings.
-    //    Strip non-schema keys (schedule, intermediateTests, eligibilityRules)
-    //    and map FK names → Prisma connect syntax.
     await tx.courses.update({
       where: { id },
       data: {
@@ -393,24 +392,63 @@ export const updateCourseFullRepo = async (id: string, data: CreateCourseDto) =>
       },
     });
 
-    // 2. Drop all existing modules (cascades to lessons, revision/contents, quiz/questions/options)
-    await tx.modules.deleteMany({ where: { courseId: id } });
+    // 2. Handle module deletion with proper order
+    if (modules !== undefined) {
+      // First, get all existing modules with their quiz questions
+      const existingModules = await tx.modules.findMany({
+        where: { courseId: id },
+        include: {
+          quiz: {
+            include: {
+              questions: true,
+            },
+          },
+        },
+      });
 
-    // 3. Recreate modules
-    if (modules && modules.length > 0) {
-      for (const m of modules) {
-        const moduleData: any = buildModuleCreate(m);
-        await tx.modules.create({
-          data: { ...moduleData, courseId: id },
+      // Collect all question IDs that might have user_quiz_answers
+      const questionIds: string[] = [];
+      existingModules.forEach((module) => {
+        if (module.quiz) {
+          module.quiz.questions.forEach((question) => {
+            questionIds.push(question.id);
+          });
+        }
+      });
+
+      // Delete user_quiz_answers first (this is the blocking constraint)
+      // Use camelCase: userQuizAnswers (not user_quiz_answers)
+      if (questionIds.length > 0) {
+        await tx.userQuizAnswer.deleteMany({
+          where: {
+            questionId: {
+              in: questionIds,
+            },
+          },
         });
+      }
+
+      // Now it's safe to delete all modules
+      await tx.modules.deleteMany({ where: { courseId: id } });
+
+      // 3. Recreate modules if provided
+      if (modules && modules.length > 0) {
+        for (const m of modules) {
+          const moduleData: any = buildModuleCreate(m);
+          await tx.modules.create({
+            data: { ...moduleData, courseId: id },
+          });
+        }
       }
     }
 
     // 4. Return the fully-updated course
-    return tx.courses.findUnique({ where: { id }, include: courseInclude });
+    return tx.courses.findUnique({ 
+      where: { id }, 
+      include: courseInclude 
+    });
   });
 };
-
 // ─── Simple field-only update (kept for backwards compat) ─────────────────────
 export const updateCourseRepo = (id: string, data: UpdateCourseDto) =>
   prisma.courses.update({ where: { id }, data, include: courseInclude });
