@@ -120,3 +120,58 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+// app/api/uploads/route.ts
+// import { NextRequest, NextResponse } from "next/server";
+
+// const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB for base64
+
+// export async function POST(request: NextRequest) {
+//   try {
+//     const formData = await request.formData();
+//     const file = formData.get("file") as File | null;
+
+//     if (!file) {
+//       return NextResponse.json(
+//         { success: false, error: "No file provided" },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Validate size (keep smaller for base64)
+//     if (file.size > MAX_FILE_SIZE) {
+//       return NextResponse.json(
+//         {
+//           success: false,
+//           error: `File size exceeds 1MB limit for base64 encoding`,
+//         },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Convert to base64
+//     const bytes = await file.arrayBuffer();
+//     const buffer = Buffer.from(bytes);
+//     const base64 = buffer.toString('base64');
+//     const dataUrl = `data:${file.type};base64,${base64}`;
+
+//     return NextResponse.json({
+//       success: true,
+//       data: {
+//         url: dataUrl,
+//         fileName: file.name,
+//         originalName: file.name,
+//         size: file.size,
+//         type: file.type,
+//         uploadedAt: new Date().toISOString(),
+//       },
+//       message: "File uploaded successfully",
+//     });
+    
+//   } catch (error) {
+//     console.error("Upload error:", error);
+//     return NextResponse.json(
+//       { success: false, error: "Failed to upload file" },
+//       { status: 500 }
+//     );
+//   }
+// }

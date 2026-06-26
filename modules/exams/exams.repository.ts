@@ -30,6 +30,12 @@ const examDetailInclude = {
   },
 } as const;
 
+// ─── Transaction Options ─────────────────────────────────────────────────────
+const TX_OPTIONS = {
+  timeout: 30000, // 30 seconds
+  maxWait: 10000, // wait up to 10s to acquire
+};
+
 // ─── Helper Functions ────────────────────────────────────────────────────────
 export function buildWhere(query: ExamQueryParams) {
   const where: any = {};
@@ -50,7 +56,6 @@ function buildOptionsCreate(options: NonNullable<CreateExamDto["questions"]>[0][
   }));
 }
 
-// FIXED: Updated to properly handle examId and sectionId
 function buildQuestionsCreate(
   questions: NonNullable<CreateExamDto["questions"]>,
   examId?: string,
@@ -75,13 +80,11 @@ function buildQuestionsCreate(
       },
     };
 
-    // FIXED: Always include examId
     const resolvedData: any = {
       ...base,
       examId: examId,
     };
 
-    // Only add sectionId if provided
     if (sectionId) {
       resolvedData.sectionId = sectionId;
     } else if (q.sectionId) {
@@ -104,8 +107,8 @@ function buildSectionsCreate(sections: NonNullable<CreateExamDto["sections"]>, e
     timeLimit: s.timeLimit ?? null,
     questions:
       s.questions && s.questions.length > 0
-        ? { 
-            create: buildQuestionsCreate(s.questions, examId) 
+        ? {
+            create: buildQuestionsCreate(s.questions, examId),
           }
         : undefined,
   }));
@@ -130,35 +133,31 @@ export const findExamByIdRepo = (id: string) =>
 export const createExamRepo = async (data: CreateExamDto) => {
   const { sections, questions, courseId, ...scalar } = data;
 
-  // FIXED: Pass examId to build functions
   let createdExam: any;
-  
+
   if (sections && sections.length > 0) {
-    // If sections exist, create exam with sections
     createdExam = await prisma.exam.create({
       data: {
         ...scalar,
         ...(courseId && { course: { connect: { id: courseId } } }),
-        sections: { 
-          create: buildSectionsCreate(sections) 
+        sections: {
+          create: buildSectionsCreate(sections),
         },
       },
       include: examDetailInclude,
     });
   } else if (questions && questions.length > 0) {
-    // If no sections but questions exist, create exam with questions
     createdExam = await prisma.exam.create({
       data: {
         ...scalar,
         ...(courseId && { course: { connect: { id: courseId } } }),
-        questions: { 
-          create: buildQuestionsCreate(questions) 
+        questions: {
+          create: buildQuestionsCreate(questions),
         },
       },
       include: examDetailInclude,
     });
   } else {
-    // Create exam without questions or sections
     createdExam = await prisma.exam.create({
       data: {
         ...scalar,
@@ -168,7 +167,6 @@ export const createExamRepo = async (data: CreateExamDto) => {
     });
   }
 
-  // Calculate total marks
   let totalMarks = 0;
   if (sections && sections.length > 0) {
     totalMarks = sections.reduce((sum, s) => sum + (s.totalMarks || 0), 0);
@@ -209,11 +207,10 @@ export const replaceExamSectionsRepo = async (
   examId: string,
   sections: NonNullable<CreateExamDto["sections"]>
 ) => {
-  return prisma.$transaction(async (tx) => {
-    // Delete existing sections (this will cascade delete their questions)
+  // Run writes inside transaction, read outside to avoid timeout
+  await prisma.$transaction(async (tx) => {
     await tx.examSection.deleteMany({ where: { examId } });
 
-    // Create new sections with questions
     for (const section of sections) {
       await tx.examSection.create({
         data: {
@@ -228,32 +225,31 @@ export const replaceExamSectionsRepo = async (
           timeLimit: section.timeLimit ?? null,
           questions:
             section.questions && section.questions.length > 0
-              ? { 
-                  create: buildQuestionsCreate(section.questions, examId) 
+              ? {
+                  create: buildQuestionsCreate(section.questions, examId),
                 }
               : undefined,
         },
       });
     }
 
-    // Calculate total marks from all sections
     const allSections = await tx.examSection.findMany({ where: { examId } });
     const totalMarks = allSections.reduce((sum, s) => sum + s.totalMarks, 0);
     await tx.exam.update({ where: { id: examId }, data: { totalMarks } });
+  }, TX_OPTIONS);
 
-    return tx.exam.findUnique({ where: { id: examId }, include: examDetailInclude });
-  });
+  // ← Outside transaction — no timeout risk
+  return prisma.exam.findUnique({ where: { id: examId }, include: examDetailInclude });
 };
 
 export const replaceExamQuestionsRepo = async (
   examId: string,
   questions: NonNullable<CreateExamDto["questions"]>
 ) => {
-  return prisma.$transaction(async (tx) => {
-    // Delete all existing questions for this exam (cascades to options)
+  // Run writes inside transaction, read outside to avoid timeout
+  await prisma.$transaction(async (tx) => {
     await tx.examQuestion.deleteMany({ where: { examId } });
 
-    // Re-create all questions
     for (const question of questions) {
       await tx.examQuestion.create({
         data: {
@@ -279,12 +275,12 @@ export const replaceExamQuestionsRepo = async (
       });
     }
 
-    // Update exam total marks to reflect actual question points
     const totalMarks = questions.reduce((sum, q) => sum + (q.points || 1), 0);
     await tx.exam.update({ where: { id: examId }, data: { totalMarks } });
+  }, TX_OPTIONS);
 
-    return tx.exam.findUnique({ where: { id: examId }, include: examDetailInclude });
-  });
+  // ← Outside transaction — no timeout risk
+  return prisma.exam.findUnique({ where: { id: examId }, include: examDetailInclude });
 };
 
 export const addQuestionToSectionRepo = async (
@@ -292,10 +288,10 @@ export const addQuestionToSectionRepo = async (
   sectionId: string,
   question: NonNullable<CreateExamDto["questions"]>[0]
 ) => {
-  const section = await prisma.examSection.findFirst({ 
-    where: { id: sectionId, examId } 
+  const section = await prisma.examSection.findFirst({
+    where: { id: sectionId, examId },
   });
-  
+
   if (!section) throw new Error("Section not found in this exam");
 
   const createdQuestion = await prisma.examQuestion.create({
@@ -320,9 +316,7 @@ export const addQuestionToSectionRepo = async (
   });
 
   // Update section total marks
-  const sectionQuestions = await prisma.examQuestion.findMany({
-    where: { sectionId },
-  });
+  const sectionQuestions = await prisma.examQuestion.findMany({ where: { sectionId } });
   const sectionTotalMarks = sectionQuestions.reduce((sum, q) => sum + q.points, 0);
   await prisma.examSection.update({
     where: { id: sectionId },
@@ -330,9 +324,7 @@ export const addQuestionToSectionRepo = async (
   });
 
   // Update exam total marks
-  const allQuestions = await prisma.examQuestion.findMany({
-    where: { examId },
-  });
+  const allQuestions = await prisma.examQuestion.findMany({ where: { examId } });
   const examTotalMarks = allQuestions.reduce((sum, q) => sum + q.points, 0);
   await prisma.exam.update({
     where: { id: examId },
@@ -347,11 +339,10 @@ export const bulkUpdateSectionQuestionsRepo = async (
   sectionId: string,
   questions: NonNullable<CreateExamDto["questions"]>
 ) => {
-  return prisma.$transaction(async (tx) => {
-    // Delete existing questions in this section
+  // Run writes inside transaction, read outside to avoid timeout
+  await prisma.$transaction(async (tx) => {
     await tx.examQuestion.deleteMany({ where: { examId, sectionId } });
 
-    // Create new questions
     for (const question of questions) {
       await tx.examQuestion.create({
         data: {
@@ -375,28 +366,22 @@ export const bulkUpdateSectionQuestionsRepo = async (
       });
     }
 
-    // Calculate section total marks
     const sectionTotalMarks = questions.reduce((sum, q) => sum + (q.points || 1), 0);
-    await tx.examSection.update({ 
-      where: { id: sectionId }, 
-      data: { totalMarks: sectionTotalMarks } 
+    await tx.examSection.update({
+      where: { id: sectionId },
+      data: { totalMarks: sectionTotalMarks },
     });
 
-    // Calculate exam total marks from all sections
-    const allSections = await tx.examSection.findMany({ 
-      where: { examId } 
-    });
+    const allSections = await tx.examSection.findMany({ where: { examId } });
     const examTotalMarks = allSections.reduce((sum, s) => sum + s.totalMarks, 0);
-    await tx.exam.update({ 
-      where: { id: examId }, 
-      data: { totalMarks: examTotalMarks } 
+    await tx.exam.update({
+      where: { id: examId },
+      data: { totalMarks: examTotalMarks },
     });
+  }, TX_OPTIONS);
 
-    return tx.exam.findUnique({ 
-      where: { id: examId }, 
-      include: examDetailInclude 
-    });
-  });
+  // ← Outside transaction — no timeout risk
+  return prisma.exam.findUnique({ where: { id: examId }, include: examDetailInclude });
 };
 
 export const assignCourseRepo = (examId: string, courseId: string) =>
