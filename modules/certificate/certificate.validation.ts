@@ -2,18 +2,18 @@ import { z } from "zod";
 
 export const generateCertificateSchema = z.object({
   studentId: z
-    .number({ required_error: "studentId is required" })
+    .number({ error: "studentId is required" })
     .int()
     .positive(),
-  courseId: z.string({ required_error: "courseId is required" }).min(1),
+  courseId: z.string({ error: "courseId is required" }).min(1),
   examAttemptId: z
-    .string({ required_error: "examAttemptId is required" })
+    .string({ error: "examAttemptId is required" })
     .min(1),
 });
 
 export const revokeCertificateSchema = z.object({
   reason: z
-    .string({ required_error: "reason is required" })
+    .string({ error: "reason is required" })
     .min(5, "Reason must be at least 5 characters")
     .max(500),
 });
@@ -30,12 +30,12 @@ export const certificateNumberParamSchema = z.object({
   certificateNumber: z.string().min(5),
 });
 
-export type GenerateCertificateSchemaType = z.infer<
+export type GenerateCertificateSchemaType = z.infer
   typeof generateCertificateSchema
 >;
-export type RevokeCertificateSchemaType = z.infer<
+export type RevokeCertificateSchemaType = z.infer
   typeof revokeCertificateSchema
 >;
-export type CertificateListQuerySchemaType = z.infer<
+export type CertificateListQuerySchemaType = z.infer
   typeof certificateListQuerySchema
 >;
