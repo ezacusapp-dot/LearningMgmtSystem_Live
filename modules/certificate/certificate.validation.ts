@@ -29,13 +29,12 @@ export const certificateListQuerySchema = z.object({
 export const certificateNumberParamSchema = z.object({
   certificateNumber: z.string().min(5),
 });
-
-export type GenerateCertificateSchemaType = z.infer
+export type GenerateCertificateSchemaType = z.infer<
   typeof generateCertificateSchema
 >;
-export type RevokeCertificateSchemaType = z.infer
+export type RevokeCertificateSchemaType = z.infer<
   typeof revokeCertificateSchema
 >;
-export type CertificateListQuerySchemaType = z.infer
+export type CertificateListQuerySchemaType = z.infer<
   typeof certificateListQuerySchema
 >;
