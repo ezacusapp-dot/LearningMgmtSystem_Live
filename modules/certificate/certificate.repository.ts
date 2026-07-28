@@ -10,13 +10,12 @@ export const certificateRepository = {
     });
   },
 
-  async findTemplateByCourseCategory(categoryId: string) {
-    return prisma.certificateTemplate.findUnique({
-      where: { categoryId },
-      include: { awardCategory: true },
-    });
-  },
-
+ async findTemplateByCourseCategory(categoryId: string) {
+  return prisma.certificateTemplate.findFirst({
+    where: { categoryId },
+    include: { awardCategory: true },
+  });
+},
   async findStudentById(studentId: number) {
     return prisma.student.findUnique({ where: { id: studentId } });
   },
