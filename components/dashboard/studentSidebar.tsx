@@ -41,7 +41,7 @@ const MAIN_NAV: NavItem[] = [
   { label: "Assignments", href: "/student/", icon: <FileText size={18} /> },
   { label: "Exams & Tests", href: "/student/exams", icon: <Award size={18} /> },
   { label: "My Grades", href: "/student/", icon: <BarChart3 size={18} /> },
-  { label: "Certificate", href: "/student/", icon: <Award size={18} /> },
+  { label: "Certificate", href: "/student/certificate", icon: <Award size={18} /> },
   { label: "Leaderboard", href: "/student/", icon: <AwardIcon  size={18} /> },
   { label: " Profile", href: "/student/", icon: <User  size={18} /> },
 ];

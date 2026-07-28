@@ -39,9 +39,6 @@ export interface ExamSectionDto {
   order: number;
   difficulty?: ExamDifficulty | null;
   questionType?: ExamQuestionType | null;
-  totalMarks: number;
-  passingMarks?: number | null;
-  timeLimit?: number | null;
   questions?: ExamQuestionDto[];
 }
 

@@ -13,6 +13,7 @@ import {
   unassignCourseService,
   deleteExamService,
   getCoursesForDropdownService,
+  getExamForStudentService,
 } from "./exams.service";
 import {
   validateCreateExam,
@@ -299,6 +300,16 @@ export const deleteExamController = async (id: string) => {
   } catch (err: any) {
     console.error("deleteExam error →", err);
     const status = err.message === "Exam not found" ? 404 : 500;
+    return Response.json({ status: false, message: err.message }, { status });
+  }
+};
+// exams.controller.ts
+export const getExamForStudentController = async (id: string) => {
+  try {
+    const data = await getExamForStudentService(id);
+    return Response.json({ status: true, data });
+  } catch (err: any) {
+    const status = err.message === "Exam not found" ? 404 : 400;
     return Response.json({ status: false, message: err.message }, { status });
   }
 };

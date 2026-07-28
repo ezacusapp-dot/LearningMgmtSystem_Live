@@ -15,6 +15,7 @@ import {
   deleteExamRepo,
   getCoursesForDropdownRepo,
   buildWhere,
+  sanitizeExamForStudent,
 } from "./exams.repository";
 import { CreateExamDto, UpdateExamDto, ExamQueryParams } from "./exams.types";
 
@@ -79,9 +80,6 @@ export const replaceExamSectionsService = async (
   const existing = await findExamByIdRepo(id);
   if (!existing) throw new Error("Exam not found");
 
-  const totalMarks = sections.reduce((sum, s) => sum + (s.totalMarks ?? 0), 0);
-  await prisma.exam.update({ where: { id }, data: { totalMarks } });
-
   return replaceExamSectionsRepo(id, sections);
 };
 
@@ -143,6 +141,18 @@ export const bulkUpdateSectionQuestionsService = async (
   if (!exam) throw new Error("Exam not found");
 
   return bulkUpdateSectionQuestionsRepo(examId, sectionId, questions);
+};
+export const getExamForStudentService = async (id: string) => {
+  const exam = await findExamByIdRepo(id);
+  if (!exam) throw new Error("Exam not found");
+
+  // Optional but recommended: block access outside the exam window
+  const now = new Date();
+  if (exam.startDate && now < exam.startDate) throw new Error("Exam has not started yet");
+  if (exam.endDate && now > exam.endDate) throw new Error("Exam has ended");
+  if (exam.status !== "Active") throw new Error("Exam is not active");
+
+  return sanitizeExamForStudent(exam);
 };
 
 export const assignCourseService = async (examId: string, courseId: string) => {

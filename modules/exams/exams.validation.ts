@@ -57,9 +57,6 @@ const sectionSchema = z.object({
     .enum(["Conceptual", "Prediction", "Debugging", "ProblemSolving"])
     .nullable()
     .optional(),
-  totalMarks: z.number().int().min(0),
-  passingMarks: z.number().int().min(0).nullable().optional(),
-  timeLimit: z.number().int().min(0).nullable().optional(),
   questions: z.array(questionSchema).optional(),
 });
 

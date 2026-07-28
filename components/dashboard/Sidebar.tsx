@@ -73,10 +73,12 @@ const mainNav: NavItem[] = [
       { label: "Award Category",  href: "/admin/dashboard/master/award-category" },
          { label: "Duration Type",   href: "/admin/dashboard/master/duration" },
            { label: "Levels",           href: "/admin/dashboard/master/levels" },
+          //  { label: "Achievement Certificate",  href: "/admin/dashboard/master/achievement-certificate" },
   { label: "Course Category", href: "/admin/dashboard/master/course-categories" },
+   { label: "Certificate Template",          href: "/admin/dashboard/master/Certificate-template-builder" },
   //{ label: "Courses",         href: "/admin/dashboard/master/courses" },
    //  { label: "Modules",          href: "/admin/dashboard/master/module" },  
-  //{ label: "Lesson",          href: "/admin/dashboard/master/lesson" },
+   { label: "Gradewise Certificate",          href: "/admin/dashboard/master/grade-wise-certificate" },
     { label: "Grades",          href: "/admin/dashboard/master/grade" },
 
 

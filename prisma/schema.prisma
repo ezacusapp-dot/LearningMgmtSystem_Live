@@ -85,7 +85,7 @@ enum SubscriptionStatus {
 }
 
 // ============================================================
-// EXAM ENUMS - ADD THESE
+// EXAM ENUMS
 // ============================================================
 
 enum ExamType {
@@ -128,10 +128,6 @@ enum ExamInputMode {
   image
   code
 }
-
-// ============================================================
-// EXAMS SECTION - Place this after your existing models
-// ============================================================
 
 // ============================================================
 // MODELS
@@ -188,19 +184,6 @@ model CourseDurationType {
   @@map("course_duration_types")
 }
 
-model AwardCategory {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  sortOrder Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  certificates CertificateTemplate[]
-
-  @@map("award_categories")
-}
-
 model ValidityPeriod {
   id        String    @id @default(cuid())
   name      String   @unique
@@ -247,41 +230,65 @@ model CourseCategory {
   durationTypeId String?
   durationType   CourseDurationType? @relation(fields: [durationTypeId], references: [id])
 
-  certificateTemplate CertificateTemplate?
-  courses             Courses[]
+  courses Courses[]
 
   @@map("course_categories")
 }
 
+// ============================================================
+// CERTIFICATE TEMPLATE
+// One template per Course. Matches the frontend certificate
+// builder exactly — no award category, pass threshold, or
+// grade tiers; those were removed from the UI.
+// ============================================================
+
 model CertificateTemplate {
-  id              String  @id @default(cuid())
-  certificateName String
-  passThreshold   Int     @default(75)
-  includeRanking  Boolean @default(true)
-  includeScore    Boolean @default(true)
+  id         String  @id @default(cuid())
+  name       String
+  courseCode String?
 
-  validityPeriod    String   @default("Lifetime")
-  gradeA            Int      @default(90)
-  gradeB            Int      @default(75)
-  gradeC            Int      @default(60)
-  borderStyle       String   @default("classic")
-  backgroundColor   String   @default("#FFFFFF")
-  primaryColor      String   @default("#49205E")
-  accentColor       String   @default("#BC579E")
-  logoUrl           String?
-  backgroundPattern String?
-  sealEnabled       Boolean  @default(true)
-  qrPosition        String   @default("bottom-right")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  includeRanking Boolean @default(true)
+  includeScore   Boolean @default(true)
 
-  categoryId      String         @unique
-  category        CourseCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  awardCategoryId String?
-  awardCategory   AwardCategory? @relation(fields: [awardCategoryId], references: [id])
+  primaryColor  String  @default("#2A1B5D")
+  accentColor   String  @default("#C21E9A")
+  fontFamily    String  @default("Playfair Display")
+  logoUrl       String? @db.Text // Store base64
+  signatureUrl  String? @db.Text // Store base64
+  signature2Url String? @db.Text // Store base64
+  backgroundUrl String? @db.Text // Store base64
+  sealEnabled   Boolean @default(true)
+  qrPosition    String  @default("bottom-right")
+
+  // Organization / signatories
+  organizationName String @default("CODE EXCELLENCE EDUTECH")
+  signatory1Name   String @default("Raina Bafna")
+  signatory1Role   String @default("Founder")
+  signatory2Name   String @default("Madhavi Patil")
+  signatory2Role   String @default("Co-Founder")
+
+  // Template versioning
+  templateVersion Int       @default(1)
+  isDraft         Boolean   @default(true)
+  publishedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One template per course
+  courseId String  @unique
+  course   Courses @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  certificates Certificate[]
 
   @@map("certificate_templates")
 }
+
+// ============================================================
+// USER — admin-side logins only (SUPER_ADMIN / SCHOOL_ADMIN /
+// PARENT). Students are NOT Users — see the Student model below,
+// which is the sole owner of enrollment/progress/certificates.
+// ============================================================
 
 model User {
   id        String    @id @default(cuid())
@@ -293,11 +300,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessions       Session[]
-  moduleProgress UserModuleProgress[]
-  lessonProgress UserLessonProgress[]
-  quizAttempts   UserQuizAttempt[]
-  enrollments    UserCourseEnrollment[]
+  sessions Session[]
 
   @@map("users")
 }
@@ -333,10 +336,12 @@ model Courses {
   courseLevel    CourseLevel?    @relation(fields: [levelId], references: [id])
   courseCategory CourseCategory? @relation(fields: [categoryId], references: [id])
 
-  modules     Modules[]
-  enrollments UserCourseEnrollment[]
-  grades      CourseGrade[]
-    exams  Exam[] 
+  modules             Modules[]
+  enrollments         StudentCourseEnrollment[]
+  grades              CourseGrade[]
+  exams               Exam[]
+  certificates        Certificate[]
+  certificateTemplate CertificateTemplate?
 
   @@map("courses")
 }
@@ -367,7 +372,7 @@ model Modules {
   lessons  Lessons[]
   revision Revision?
   quiz     Quiz?
-  progress UserModuleProgress[]
+  progress StudentModuleProgress[]
 
   @@unique([courseId, order])
   @@index([courseId])
@@ -385,12 +390,23 @@ model Lessons {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  module   Modules              @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  progress UserLessonProgress[]
+  module   Modules                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress StudentLessonProgress[]
 
   @@unique([moduleId, order])
   @@index([moduleId])
   @@map("lessons")
+}
+
+model AwardCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("award_categories")
 }
 
 model Revision {
@@ -432,9 +448,9 @@ model Quiz {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  module    Modules           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module    Modules              @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   questions Question[]
-  attempts  UserQuizAttempt[]
+  attempts  StudentQuizAttempt[]
 
   @@map("quizzes")
 }
@@ -458,9 +474,9 @@ model Question {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  quiz    Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
   options Option[]
-  answers UserQuizAnswer[]
+  answers StudentQuizAnswer[]
 
   @@index([quizId])
   @@map("questions")
@@ -479,116 +495,17 @@ model Option {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  question Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  answers  UserQuizAnswer[]
+  question Question            @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  StudentQuizAnswer[]
 
   @@index([questionId])
   @@map("options")
 }
 
 // ============================================================
-// USER — ENROLLMENT & PROGRESS
+// STUDENT — the sole owner of enrollment, progress, quiz
+// attempts, and certificates. (User is admin-only; see above.)
 // ============================================================
-
-model UserCourseEnrollment {
-  id         String     @id @default(cuid())
-  userId     String
-  courseId   String
-  isActive   Boolean   @default(true)
-  expiresAt  DateTime?
-  enrolledAt DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  startDate DateTime?
-  endDate   DateTime?
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Courses @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  lessonProgress UserLessonProgress[]
-  quizAttempts   UserQuizAttempt[]
-
-  @@unique([userId, courseId])
-  @@index([userId])
-  @@index([courseId])
-  @@map("user_course_enrollments")
-}
-
-model UserModuleProgress {
-  id          String    @id @default(cuid())
-  userId      String
-  moduleId    String
-  isCompleted Boolean   @default(false)
-  completedAt DateTime?
-  updatedAt   DateTime  @updatedAt
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module Modules @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, moduleId])
-  @@index([userId])
-  @@index([moduleId])
-  @@map("user_module_progress")
-}
-
-
-model UserLessonProgress {
-  id           String    @id @default(cuid())
-  userId       String
-  lessonId     String
-  enrollmentId String?                          // ← add this
-  isCompleted  Boolean   @default(false)
-  completedAt  DateTime?
-  updatedAt    DateTime  @updatedAt
-
-  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson     Lessons               @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  enrollment UserCourseEnrollment? @relation(fields: [enrollmentId], references: [id]) // ← add this
-
-  @@unique([userId, lessonId])
-  @@index([userId])
-  @@index([lessonId])
-  @@map("user_lesson_progress")
-}
-
-
-model UserQuizAttempt {
-  id           String   @id @default(cuid())
-  userId       String
-  quizId       String
-  enrollmentId String?                          // ← add this
-  score        Int
-  isPassed     Boolean
-  timeTaken    Int?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz       Quiz                  @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  enrollment UserCourseEnrollment? @relation(fields: [enrollmentId], references: [id]) // ← add this
-  answers    UserQuizAnswer[]
-
-  @@unique([userId, quizId])
-  @@index([userId])
-  @@index([quizId])
-  @@map("user_quiz_attempts")
-}
-
-model UserQuizAnswer {
-  id         String   @id @default(cuid())
-  attemptId  String
-  questionId String
-  optionId   String
-  isCorrect  Boolean
-  createdAt  DateTime @default(now())
-
-  attempt  UserQuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question Question        @relation(fields: [questionId], references: [id])
-  option   Option          @relation(fields: [optionId], references: [id])
-
-  @@index([attemptId])
-  @@map("user_quiz_answers")
-}
 
 model Student {
   id            Int      @id @default(autoincrement())
@@ -608,73 +525,184 @@ model Student {
   address       String?
   role          UserRole @default(STUDENT)
   createdAt     DateTime @default(now())
+
+  enrollments    StudentCourseEnrollment[]
+  moduleProgress StudentModuleProgress[]
+  lessonProgress StudentLessonProgress[]
+  quizAttempts   StudentQuizAttempt[]
+  certificates   Certificate[]
+ examAttempts     ExamAttempt[]      // NEW
+  examCertificates ExamCertificate[]  // NEW
+  @@map("students")
 }
+
 // ============================================================
-// EXAMS SECTION - Corrected
+// STUDENT — ENROLLMENT & PROGRESS
 // ============================================================
 
-// Exam Section Template for reusability
-model ExamSectionTemplate {
+model StudentCourseEnrollment {
+  id         String     @id @default(cuid())
+  studentId  Int
+  courseId   String
+  isActive   Boolean   @default(true)
+  expiresAt  DateTime?
+  enrolledAt DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  startDate DateTime?
+  endDate   DateTime?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Courses @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessonProgress StudentLessonProgress[]
+  quizAttempts   StudentQuizAttempt[]
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+  @@map("student_course_enrollments")
+}
+
+model StudentModuleProgress {
+  id          String    @id @default(cuid())
+  studentId   Int
+  moduleId    String
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  module  Modules @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, moduleId])
+  @@index([studentId])
+  @@index([moduleId])
+  @@map("student_module_progress")
+}
+
+model StudentLessonProgress {
   id           String    @id @default(cuid())
-  name         String
-  description  String?   @db.Text
-  isActive     Boolean   @default(true)
-  createdBy    String?
-  createdAt    DateTime  @default(now())
+  studentId    Int
+  lessonId     String
+  enrollmentId String?
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
   updatedAt    DateTime  @updatedAt
-  
-  sections     ExamSectionTemplateItem[]
-  
+
+  student    Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson     Lessons                  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  enrollment StudentCourseEnrollment? @relation(fields: [enrollmentId], references: [id])
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([lessonId])
+  @@map("student_lesson_progress")
+}
+
+model StudentQuizAttempt {
+  id           String   @id @default(cuid())
+  studentId    Int
+  quizId       String
+  enrollmentId String?
+  score        Int
+  isPassed     Boolean
+  timeTaken    Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student    Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz       Quiz                     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  enrollment StudentCourseEnrollment? @relation(fields: [enrollmentId], references: [id])
+  answers    StudentQuizAnswer[]
+
+  @@unique([studentId, quizId])
+  @@index([studentId])
+  @@index([quizId])
+  @@map("student_quiz_attempts")
+}
+
+model StudentQuizAnswer {
+  id         String   @id @default(cuid())
+  attemptId  String
+  questionId String
+  optionId   String
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
+
+  attempt  StudentQuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question           @relation(fields: [questionId], references: [id])
+  option   Option             @relation(fields: [optionId], references: [id])
+
+  @@index([attemptId])
+  @@map("student_quiz_answers")
+}
+
+// ============================================================
+// EXAMS SECTION
+// ============================================================
+
+model ExamSectionTemplate {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  isActive    Boolean   @default(true)
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sections ExamSectionTemplateItem[]
+
   @@map("exam_section_templates")
 }
 
 model ExamSectionTemplateItem {
-  id              String    @id @default(cuid())
-  templateId      String
-  title           String
-  description     String?   @db.Text
-  order           Int
-  difficulty      ExamDifficulty
-  questionType    ExamQuestionType?
-  defaultMarks    Int
+  id               String            @id @default(cuid())
+  templateId       String
+  title            String
+  description      String?           @db.Text
+  order            Int
+  difficulty       ExamDifficulty
+  questionType     ExamQuestionType?
+  defaultMarks     Int
   defaultQuestions Int
-  timeLimit       Int?
-  
-  template        ExamSectionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  
+  timeLimit        Int?
+
+  template ExamSectionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
   @@unique([templateId, order])
   @@map("exam_section_template_items")
 }
 
 model Exam {
-  id           String      @id @default(cuid())
+  id           String     @id @default(cuid())
   title        String
-  description  String?     @db.Text
+  description  String?    @db.Text
   courseId     String?
-  examType     ExamType    @default(MOCK)
-  totalMarks   Int         @default(0)
-  passingMarks Int         @default(0)
+  examType     ExamType   @default(MOCK)
+  totalMarks   Int        @default(0)
+  passingMarks Int        @default(0)
   duration     Int
-  status       ExamStatus  @default(Draft)  // Fixed: Draft not DRAFT
+  status       ExamStatus @default(Draft)
   createdBy    String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   publishedAt  DateTime?
-  
-  maxAttempts         Int     @default(3)
-  showAnswers         Boolean @default(false)
-  showExplanations    Boolean @default(false)
-  randomizeQuestions  Boolean @default(false)
-  requireProctoring   Boolean @default(false)
-  
-  startDate    DateTime?
-  endDate      DateTime?
-  
+
+  maxAttempts        Int     @default(3)
+  showAnswers        Boolean @default(false)
+  showExplanations   Boolean @default(false)
+  randomizeQuestions Boolean @default(false)
+  requireProctoring  Boolean @default(false)
+
+  startDate DateTime?
+  endDate   DateTime?
+
   course    Courses?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
   sections  ExamSection[]
   questions ExamQuestion[]
   attempts  ExamAttempt[]
-
+examCertificates ExamCertificate[] 
   @@index([courseId])
   @@index([examType])
   @@index([status])
@@ -682,50 +710,47 @@ model Exam {
 }
 
 model ExamSection {
-  id           String    @id @default(cuid())
+  id           String            @id @default(cuid())
   examId       String
   title        String
-  description  String?   @db.Text
+  description  String?           @db.Text
   order        Int
   difficulty   ExamDifficulty
   questionType ExamQuestionType?
-  totalMarks   Int
-  passingMarks Int?
-  timeLimit    Int?
-  
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  
-  exam         Exam              @relation(fields: [examId], references: [id], onDelete: Cascade)
-  questions    ExamQuestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exam          Exam               @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questions     ExamQuestion[]
   sectionScores ExamSectionScore[]
-  
+
   @@unique([examId, order])
   @@index([examId])
   @@map("exam_sections")
 }
 
 model ExamQuestion {
-  id           String            @id @default(cuid())
-  examId       String
-  sectionId    String?
-  question     String            @db.Text
-  inputMode    ExamInputMode     @default(text)
-  questionImage String?          @db.Text
-  codeSnippet  String?           @db.Text
-  codeLanguage String?
-  explanation  String?           @db.Text
-  explanationImage String?       @db.Text
-  points       Int               @default(1)
-  difficulty   ExamDifficulty?
-  bloomLevel   ExamBloomLevel?
-  questionType ExamQuestionType?
-  order        Int
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id               String            @id @default(cuid())
+  examId           String
+  sectionId        String?
+  question         String            @db.Text
+  inputMode        ExamInputMode     @default(text)
+  questionImage    String?           @db.Text
+  codeSnippet      String?           @db.Text
+  codeLanguage     String?
+  explanation      String?           @db.Text
+  explanationImage String?           @db.Text
+  points           Int               @default(1)
+  difficulty       ExamDifficulty?
+  bloomLevel       ExamBloomLevel?
+  questionType     ExamQuestionType?
+  order            Int
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
-  exam    Exam               @relation(fields: [examId], references: [id], onDelete: Cascade)
-  section ExamSection?       @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  exam    Exam                @relation(fields: [examId], references: [id], onDelete: Cascade)
+  section ExamSection?        @relation(fields: [sectionId], references: [id], onDelete: SetNull)
   options ExamOption[]
   answers ExamAttemptAnswer[]
 
@@ -753,30 +778,39 @@ model ExamOption {
   @@map("exam_options")
 }
 
+// NOTE: ExamAttempt.userId is left as a generic String? identifier for now.
+// Exams weren't in scope of the Student/User schema fix — if you want exam
+// results feeding into certificate grades later, point this at Student too
+// (studentId Int?) the same way the models above were migrated.
 model ExamAttempt {
-  id         String   @id @default(uuid())
-  examId     String
-  userId     String?
-  score      Int
-  percentage Float?
-  isPassed   Boolean
-  timeTaken  Int?
-  startedAt  DateTime?
+  id          String    @id @default(uuid())
+  examId      String
+  userId      String?          // kept for backward compat, unused going forward
+  studentId   Int?             // NEW — real FK to Student
+  score       Int
+  percentage  Float?
+  isPassed    Boolean
+  timeTaken   Int?
+  startedAt   DateTime?
   completedAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  exam    Exam                @relation(fields: [examId], references: [id], onDelete: Cascade)
-  answers ExamAttemptAnswer[]
-  sectionScores ExamSectionScore[]
+  exam            Exam                @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student         Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade) // NEW
+  answers         ExamAttemptAnswer[]
+  sectionScores   ExamSectionScore[]
+  certificate     Certificate?
+  examCertificate ExamCertificate?    // NEW
 
   @@index([examId])
   @@index([userId])
+  @@index([studentId])              // NEW
   @@map("exam_attempts")
 }
 
 model ExamAttemptAnswer {
-  id         String    @id @default(cuid())
+  id         String   @id @default(cuid())
   attemptId  String
   questionId String
   optionId   String
@@ -793,15 +827,15 @@ model ExamAttemptAnswer {
 }
 
 model ExamSectionScore {
-  id         String    @id @default(cuid())
-  attemptId  String
-  sectionId  String
-  score      Int
-  percentage Float
-  isPassed   Boolean?
-  totalQuestions Int
+  id                String   @id @default(cuid())
+  attemptId         String
+  sectionId         String
+  score             Int
+  percentage        Float
+  isPassed          Boolean?
+  totalQuestions    Int
   correctlyAnswered Int
-  createdAt  DateTime  @default(now())
+  createdAt         DateTime @default(now())
 
   attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   section ExamSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
@@ -809,4 +843,107 @@ model ExamSectionScore {
   @@unique([attemptId, sectionId])
   @@index([attemptId])
   @@map("exam_section_scores")
+}
+
+enum CertificateStatus {
+  Issued
+  Revoked
+  Expired
+}
+
+model Certificate {
+  id                String            @id @default(cuid())
+  certificateNumber String            @unique
+
+  score      Int
+  percentage Float
+  grade      String
+  status     CertificateStatus @default(Issued)
+
+  issuedAt      DateTime  @default(now())
+  expiresAt     DateTime?
+  revokedAt     DateTime?
+  revokedReason String?
+
+  qrCodeUrl       String?
+  verificationUrl String?
+  pdfUrl          String?
+
+  // Snapshots so the certificate content never changes even if the
+  // student/course is renamed later.
+  studentNameSnapshot String
+  courseNameSnapshot  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+
+  courseId String
+  course   Courses @relation(fields: [courseId], references: [id])
+
+  templateId String
+  template   CertificateTemplate @relation(fields: [templateId], references: [id])
+
+  examAttemptId String?      @unique
+  examAttempt   ExamAttempt? @relation(fields: [examAttemptId], references: [id])
+
+  @@unique([studentId, courseId]) // one certificate per student per course
+  @@index([studentId])
+  @@index([courseId])
+  @@index([templateId])
+  @@map("certificates")
+}
+model AchievementCertificate {
+  id              String   @id @default(cuid())
+  certificateName String   @db.VarChar(150)
+  designation     String   @db.VarChar(150)
+  colorCode       String   @db.VarChar(7) 
+  percentFrom     Float    
+  percentTo       Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  examCertificates ExamCertificate[] 
+
+  @@unique([certificateName])
+  @@index([percentFrom, percentTo])
+  @@map("achievement_certificates")
+}
+model ExamCertificate {
+  id                String   @id @default(cuid())
+  certificateNumber String   @unique
+
+  score      Int
+  percentage Float
+  isPassed   Boolean
+
+  // Snapshot of the band at issue time, so it never changes even if
+  // an admin edits/deletes the band later.
+  certificateName String
+  designation     String
+  colorCode       String
+
+  studentNameSnapshot String
+  examTitleSnapshot   String
+
+  issuedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  examId String
+  exam   Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  attemptId String      @unique
+  attempt   ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  bandId String?
+  band   AchievementCertificate? @relation(fields: [bandId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([examId])
+  @@map("exam_certificates")
 }

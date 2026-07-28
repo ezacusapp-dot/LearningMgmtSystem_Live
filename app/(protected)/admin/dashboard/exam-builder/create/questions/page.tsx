@@ -6,11 +6,11 @@ import { useRouter } from "next/navigation";
 import { examsApi, ExamQuestion } from "app/api/exams/exams";
 
 const OPTION_LABELS = ["A", "B", "C", "D"];
-const CODE_LANGUAGES = [
-  { value: "python", label: "Python" }, { value: "javascript", label: "JavaScript" }, { value: "java", label: "Java" },
-  { value: "c", label: "C" }, { value: "cpp", label: "C++" }, { value: "sql", label: "SQL" },
-  { value: "typescript", label: "TypeScript" }, { value: "html", label: "HTML" },
-];
+// const CODE_LANGUAGES = [
+//   { value: "python", label: "Python" }, { value: "javascript", label: "JavaScript" }, { value: "java", label: "Java" },
+//   { value: "c", label: "C" }, { value: "cpp", label: "C++" }, { value: "sql", label: "SQL" },
+//   { value: "typescript", label: "TypeScript" }, { value: "html", label: "HTML" },
+// ];
 const DIFFICULTIES = ["Easy", "Medium", "Difficult", "Challenging"];
 const BLOOM_LEVELS = ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"];
 const QUESTION_TYPES = ["Conceptual", "Prediction", "Debugging", "ProblemSolving"];
@@ -137,7 +137,7 @@ function QuestionCard({ q, index, total, onUpdate, onDelete }: any) {
         </div>
         {q.showCode && (
           <div className="border border-blue-500/20 rounded-xl overflow-hidden bg-[#06080e]">
-            <div className="flex justify-between items-center px-4 py-2 border-b border-white/5"><div className="flex items-center gap-2"><span className="text-blue-400"><Icon.Code /></span><span className="text-xs font-semibold text-slate-500">Code Snippet</span></div><select value={q.codeLanguage} onChange={e => upd({ codeLanguage: e.target.value })} className="bg-[#0a0c12] border border-white/10 rounded px-2 py-1 text-blue-400 text-xs">{CODE_LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}</select></div>
+            <div className="flex justify-between items-center px-4 py-2 border-b border-white/5"><div className="flex items-center gap-2"><span className="text-blue-400"><Icon.Code /></span><span className="text-xs font-semibold text-slate-500">Code Snippet</span></div></div>
             <textarea placeholder="// Write code snippet here..." value={q.codeSnippet} rows={4} onChange={e => upd({ codeSnippet: e.target.value })} className="w-full bg-transparent border-none px-4 py-3 text-slate-300 text-sm font-mono resize-none outline-none" />
           </div>
         )}

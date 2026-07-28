@@ -102,9 +102,6 @@ function buildSectionsCreate(sections: NonNullable<CreateExamDto["sections"]>, e
     order: s.order || 0,
     difficulty: (s.difficulty ?? null) as any,
     questionType: (s.questionType ?? null) as any,
-    totalMarks: s.totalMarks || 0,
-    passingMarks: s.passingMarks ?? null,
-    timeLimit: s.timeLimit ?? null,
     questions:
       s.questions && s.questions.length > 0
         ? {
@@ -167,9 +164,13 @@ export const createExamRepo = async (data: CreateExamDto) => {
     });
   }
 
+  // Calculate total marks from questions only
   let totalMarks = 0;
+  
+  // If sections exist, get all questions from sections
   if (sections && sections.length > 0) {
-    totalMarks = sections.reduce((sum, s) => sum + (s.totalMarks || 0), 0);
+    const allQuestions = sections.flatMap(s => s.questions || []);
+    totalMarks = allQuestions.reduce((sum, q) => sum + (q.points || 1), 0);
   } else if (questions && questions.length > 0) {
     totalMarks = questions.reduce((sum, q) => sum + (q.points || 1), 0);
   }
@@ -187,6 +188,83 @@ export const createExamRepo = async (data: CreateExamDto) => {
   });
 };
 
+// modules/exams/exams.repository.ts
+
+// Fields a student should NEVER receive
+function sanitizeOptionForStudent(option: any) {
+  return {
+    id: option.id,
+    text: option.text,
+    inputMode: option.inputMode,
+    imageData: option.imageData,
+    order: option.order,
+    // isCorrect, createdAt, updatedAt, questionId → intentionally omitted
+  };
+}
+
+function sanitizeQuestionForStudent(question: any, showExplanations: boolean) {
+  return {
+    id: question.id,
+    question: question.question,
+    inputMode: question.inputMode,
+    questionImage: question.questionImage,
+    codeSnippet: question.codeSnippet,
+    codeLanguage: question.codeLanguage,
+    points: question.points,
+    difficulty: question.difficulty,
+    bloomLevel: question.bloomLevel,
+    questionType: question.questionType,
+    order: question.order,
+    options: question.options.map(sanitizeOptionForStudent),
+    // Only include explanation if the exam allows it (and typically only after submission)
+    ...(showExplanations && {
+      explanation: question.explanation,
+      explanationImage: question.explanationImage,
+    }),
+    // sectionId, examId, createdAt, updatedAt → intentionally omitted
+  };
+}
+
+function sanitizeSectionForStudent(section: any, showExplanations: boolean) {
+  return {
+    id: section.id,
+    title: section.title,
+    description: section.description,
+    order: section.order,
+    difficulty: section.difficulty,
+    questionType: section.questionType,
+    questions: section.questions.map((q: any) =>
+      sanitizeQuestionForStudent(q, showExplanations)
+    ),
+    // examId, createdAt, updatedAt → omitted
+  };
+}
+
+export function sanitizeExamForStudent(exam: any) {
+  const showExplanations = !!exam.showExplanations;
+
+  return {
+    id: exam.id,
+    title: exam.title,
+    description: exam.description,
+    examType: exam.examType,
+    totalMarks: exam.totalMarks,
+    passingMarks: exam.passingMarks,
+    duration: exam.duration,
+    maxAttempts: exam.maxAttempts,
+    randomizeQuestions: exam.randomizeQuestions,
+    startDate: exam.startDate,
+    endDate: exam.endDate,
+    course: exam.course,
+    sections: exam.sections.map((s: any) =>
+      sanitizeSectionForStudent(s, showExplanations)
+    ),
+    questions: exam.questions.map((q: any) =>
+      sanitizeQuestionForStudent(q, showExplanations)
+    ),
+    // status, createdBy, createdAt, updatedAt, publishedAt, showAnswers, requireProctoring → omitted
+  };
+}
 export const updateExamRepo = (id: string, data: UpdateExamDto) => {
   const { courseId, ...scalar } = data;
   return prisma.exam.update({
@@ -207,12 +285,15 @@ export const replaceExamSectionsRepo = async (
   examId: string,
   sections: NonNullable<CreateExamDto["sections"]>
 ) => {
-  // Run writes inside transaction, read outside to avoid timeout
+  // Run writes inside transaction
   await prisma.$transaction(async (tx) => {
+    // Delete existing sections and their questions
     await tx.examSection.deleteMany({ where: { examId } });
 
+    // Create new sections
     for (const section of sections) {
-      await tx.examSection.create({
+      // Create the section first
+      const createdSection = await tx.examSection.create({
         data: {
           examId,
           title: section.title,
@@ -220,26 +301,68 @@ export const replaceExamSectionsRepo = async (
           order: section.order || 0,
           difficulty: (section.difficulty ?? null) as any,
           questionType: (section.questionType ?? null) as any,
-          totalMarks: section.totalMarks || 0,
-          passingMarks: section.passingMarks ?? null,
-          timeLimit: section.timeLimit ?? null,
-          questions:
-            section.questions && section.questions.length > 0
-              ? {
-                  create: buildQuestionsCreate(section.questions, examId),
-                }
-              : undefined,
         },
       });
+
+      // If there are questions, create them with the section ID
+      if (section.questions && section.questions.length > 0) {
+        // Create questions one by one to handle options
+        for (const question of section.questions) {
+          const createdQuestion = await tx.examQuestion.create({
+            data: {
+              examId,
+              sectionId: createdSection.id,
+              question: question.question,
+              inputMode: (question.inputMode ?? "text") as any,
+              questionImage: question.inputMode === "image" ? (question.questionImage ?? null) : null,
+              codeSnippet: question.codeSnippet ?? null,
+              codeLanguage: question.codeLanguage ?? null,
+              explanation: question.explanation ?? null,
+              explanationImage: question.explanationImage ?? null,
+              points: question.points || 1,
+              difficulty: (question.difficulty ?? null) as any,
+              bloomLevel: (question.bloomLevel ?? null) as any,
+              questionType: (question.questionType ?? null) as any,
+              order: question.order || 0,
+            },
+          });
+
+          // Create options for the question
+          if (question.options && question.options.length > 0) {
+            await tx.examOption.createMany({
+              data: question.options.map((o) => ({
+                questionId: createdQuestion.id,
+                text: o.text || "",
+                isCorrect: o.isCorrect,
+                order: o.order || 0,
+                inputMode: (o.inputMode ?? "text") as any,
+                imageData: o.inputMode === "image" ? (o.imageData ?? null) : null,
+              })),
+            });
+          }
+        }
+      }
     }
 
-    const allSections = await tx.examSection.findMany({ where: { examId } });
-    const totalMarks = allSections.reduce((sum, s) => sum + s.totalMarks, 0);
-    await tx.exam.update({ where: { id: examId }, data: { totalMarks } });
+    // Calculate total marks from all questions
+    const allQuestions = await tx.examQuestion.findMany({ 
+      where: { examId },
+      select: { points: true }
+    });
+    const totalMarks = allQuestions.reduce((sum, q) => sum + q.points, 0);
+    
+    // Update exam total marks
+    await tx.exam.update({ 
+      where: { id: examId }, 
+      data: { totalMarks } 
+    });
   }, TX_OPTIONS);
 
-  // ← Outside transaction — no timeout risk
-  return prisma.exam.findUnique({ where: { id: examId }, include: examDetailInclude });
+  // Return updated exam with all data
+  return prisma.exam.findUnique({ 
+    where: { id: examId }, 
+    include: examDetailInclude 
+  });
 };
 
 export const replaceExamQuestionsRepo = async (
@@ -288,12 +411,14 @@ export const addQuestionToSectionRepo = async (
   sectionId: string,
   question: NonNullable<CreateExamDto["questions"]>[0]
 ) => {
+  // Verify section exists
   const section = await prisma.examSection.findFirst({
     where: { id: sectionId, examId },
   });
 
   if (!section) throw new Error("Section not found in this exam");
 
+  // Create the question
   const createdQuestion = await prisma.examQuestion.create({
     data: {
       examId,
@@ -315,16 +440,19 @@ export const addQuestionToSectionRepo = async (
     include: { options: true },
   });
 
-  // Update section total marks
-  const sectionQuestions = await prisma.examQuestion.findMany({ where: { sectionId } });
-  const sectionTotalMarks = sectionQuestions.reduce((sum, q) => sum + q.points, 0);
-  await prisma.examSection.update({
-    where: { id: sectionId },
-    data: { totalMarks: sectionTotalMarks },
-  });
+  // Remove section total marks update - we don't need this
+  // const sectionQuestions = await prisma.examQuestion.findMany({ where: { sectionId } });
+  // const sectionTotalMarks = sectionQuestions.reduce((sum, q) => sum + q.points, 0);
+  // await prisma.examSection.update({
+  //   where: { id: sectionId },
+  //   data: { totalMarks: sectionTotalMarks },
+  // });
 
-  // Update exam total marks
-  const allQuestions = await prisma.examQuestion.findMany({ where: { examId } });
+  // Only update exam total marks from all questions
+  const allQuestions = await prisma.examQuestion.findMany({ 
+    where: { examId },
+    select: { points: true }
+  });
   const examTotalMarks = allQuestions.reduce((sum, q) => sum + q.points, 0);
   await prisma.exam.update({
     where: { id: examId },
@@ -339,19 +467,20 @@ export const bulkUpdateSectionQuestionsRepo = async (
   sectionId: string,
   questions: NonNullable<CreateExamDto["questions"]>
 ) => {
-  // Run writes inside transaction, read outside to avoid timeout
+  // Run writes inside transaction
   await prisma.$transaction(async (tx) => {
+    // Delete existing questions for this section
     await tx.examQuestion.deleteMany({ where: { examId, sectionId } });
 
+    // Create new questions
     for (const question of questions) {
-      await tx.examQuestion.create({
+      const createdQuestion = await tx.examQuestion.create({
         data: {
           examId,
           sectionId,
           question: question.question,
           inputMode: (question.inputMode ?? "text") as any,
-          questionImage:
-            question.inputMode === "image" ? (question.questionImage ?? null) : null,
+          questionImage: question.inputMode === "image" ? (question.questionImage ?? null) : null,
           codeSnippet: question.codeSnippet ?? null,
           codeLanguage: question.codeLanguage ?? null,
           explanation: question.explanation ?? null,
@@ -361,27 +490,48 @@ export const bulkUpdateSectionQuestionsRepo = async (
           bloomLevel: (question.bloomLevel ?? null) as any,
           questionType: (question.questionType ?? null) as any,
           order: question.order || 0,
-          options: { create: buildOptionsCreate(question.options) },
         },
       });
+
+      // Create options
+      if (question.options && question.options.length > 0) {
+        await tx.examOption.createMany({
+          data: question.options.map((o) => ({
+            questionId: createdQuestion.id,
+            text: o.text || "",
+            isCorrect: o.isCorrect,
+            order: o.order || 0,
+            inputMode: (o.inputMode ?? "text") as any,
+            imageData: o.inputMode === "image" ? (o.imageData ?? null) : null,
+          })),
+        });
+      }
     }
 
-    const sectionTotalMarks = questions.reduce((sum, q) => sum + (q.points || 1), 0);
-    await tx.examSection.update({
-      where: { id: sectionId },
-      data: { totalMarks: sectionTotalMarks },
-    });
+    // Remove section total marks update
+    // const sectionTotalMarks = questions.reduce((sum, q) => sum + (q.points || 1), 0);
+    // await tx.examSection.update({
+    //   where: { id: sectionId },
+    //   data: { totalMarks: sectionTotalMarks },
+    // });
 
-    const allSections = await tx.examSection.findMany({ where: { examId } });
-    const examTotalMarks = allSections.reduce((sum, s) => sum + s.totalMarks, 0);
+    // Only update exam total marks
+    const allQuestions = await tx.examQuestion.findMany({ 
+      where: { examId },
+      select: { points: true }
+    });
+    const examTotalMarks = allQuestions.reduce((sum, q) => sum + q.points, 0);
     await tx.exam.update({
       where: { id: examId },
       data: { totalMarks: examTotalMarks },
     });
   }, TX_OPTIONS);
 
-  // ← Outside transaction — no timeout risk
-  return prisma.exam.findUnique({ where: { id: examId }, include: examDetailInclude });
+  // Return updated exam
+  return prisma.exam.findUnique({ 
+    where: { id: examId }, 
+    include: examDetailInclude 
+  });
 };
 
 export const assignCourseRepo = (examId: string, courseId: string) =>

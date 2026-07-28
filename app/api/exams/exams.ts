@@ -35,12 +35,8 @@ export interface ExamSection {
   order: number;
   difficulty?: "Easy" | "Medium" | "Difficult" | "Challenging" | null;
   questionType?: "Conceptual" | "Prediction" | "Debugging" | "ProblemSolving" | null;
-  totalMarks: number;
-  passingMarks?: number | null;
-  timeLimit?: number | null;
   questions?: ExamQuestion[];
 }
-
 export interface CreateExamData {
   title: string;
   description?: string | null;

@@ -13,12 +13,10 @@ interface Section {
   title: string;
   description: string;
   order: number;
-  difficulty: Difficulty; // Use the specific type instead of string
-  questionType: QuestionType; // Use the specific type instead of string
-  totalMarks: number;
-  passingMarks: number;
-  timeLimit: number;
+  difficulty: Difficulty;
+  questionType: QuestionType;
 }
+
 
 // Use the types for the arrays
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Difficult", "Challenging"];
@@ -29,11 +27,11 @@ export default function SectionsBuilderPage() {
   const searchParams = useSearchParams();
   const examId = searchParams.get("examId");
   const [sections, setSections] = useState<Section[]>([
-    { title: "Section A – Basic Concepts", description: "Basic Concepts (Easy)", order: 0, difficulty: "Easy", questionType: "Conceptual", totalMarks: 15, passingMarks: 8, timeLimit: 25 },
-    { title: "Section B – Code Understanding", description: "Code Understanding (Medium)", order: 1, difficulty: "Medium", questionType: "Prediction", totalMarks: 15, passingMarks: 8, timeLimit: 30 },
-    { title: "Section C – Code Analysis", description: "Code Analysis (Difficult)", order: 2, difficulty: "Difficult", questionType: "Debugging", totalMarks: 10, passingMarks: 5, timeLimit: 30 },
-    { title: "Section D – Logical Programming", description: "Logical Programming (Challenging)", order: 3, difficulty: "Challenging", questionType: "ProblemSolving", totalMarks: 10, passingMarks: 5, timeLimit: 35 },
-  ]);
+  { title: "Section A – Basic Concepts", description: "Basic Concepts (Easy)", order: 0, difficulty: "Easy", questionType: "Conceptual" },
+  { title: "Section B – Code Understanding", description: "Code Understanding (Medium)", order: 1, difficulty: "Medium", questionType: "Prediction" },
+  { title: "Section C – Code Analysis", description: "Code Analysis (Difficult)", order: 2, difficulty: "Difficult", questionType: "Debugging" },
+  { title: "Section D – Logical Programming", description: "Logical Programming (Challenging)", order: 3, difficulty: "Challenging", questionType: "ProblemSolving" },
+]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -56,9 +54,6 @@ export default function SectionsBuilderPage() {
       order: sections.length, 
       difficulty: "Medium", 
       questionType: "Conceptual", 
-      totalMarks: 0, 
-      passingMarks: 0, 
-      timeLimit: 30 
     }]);
   };
 
@@ -70,7 +65,6 @@ export default function SectionsBuilderPage() {
     setSections(sections.filter((_, i) => i !== index));
   };
 
-  const totalMarks = sections.reduce((sum, s) => sum + s.totalMarks, 0);
 
   const handleSave = async () => {
     const examIdToUse = examId || localStorage.getItem("currentExamId");
@@ -118,10 +112,10 @@ export default function SectionsBuilderPage() {
             <h1 className="text-3xl font-extrabold tracking-tight text-white">Organize Exam Sections</h1>
             <p className="text-slate-500 text-sm mt-1">Group questions into sections with different difficulty levels</p>
           </div>
-          <div className="ml-auto bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2">
+          {/* <div className="ml-auto bg-[#0f1117] border border-white/10 rounded-lg px-4 py-2">
             <span className="text-xs text-slate-500">Total Marks:</span>
             <span className="ml-2 text-lg font-bold text-violet-400">{totalMarks}</span>
-          </div>
+          </div> */}
         </div>
         <div className="space-y-4">
           {sections.map((section, idx) => (
@@ -173,8 +167,8 @@ export default function SectionsBuilderPage() {
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
+                {/* <div className="grid grid-cols-3 gap-4">
+                  {/* <div>
                     <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Total Marks</label>
                     <input 
                       type="number" 
@@ -182,8 +176,8 @@ export default function SectionsBuilderPage() {
                       onChange={(e) => updateSection(idx, "totalMarks", parseInt(e.target.value) || 0)} 
                       className="w-full mt-1 bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500" 
                     />
-                  </div>
-                  <div>
+                  </div> */}
+                  {/* <div>
                     <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Passing Marks</label>
                     <input 
                       type="number" 
@@ -191,8 +185,8 @@ export default function SectionsBuilderPage() {
                       onChange={(e) => updateSection(idx, "passingMarks", parseInt(e.target.value) || 0)} 
                       className="w-full mt-1 bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500" 
                     />
-                  </div>
-                  <div>
+                  </div> */}
+                  {/* <div>
                     <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Time Limit (min)</label>
                     <input 
                       type="number" 
@@ -200,8 +194,8 @@ export default function SectionsBuilderPage() {
                       onChange={(e) => updateSection(idx, "timeLimit", parseInt(e.target.value) || 0)} 
                       className="w-full mt-1 bg-[#0a0c12] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500" 
                     />
-                  </div>
-                </div>
+                  </div> */}
+                {/* </div> */} 
               </div>
             </div>
           ))}

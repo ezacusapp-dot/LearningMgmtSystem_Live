@@ -28,6 +28,7 @@ interface Rule {
   desc: string;
   enabled: boolean;
 }
+
 // ─── Transformer — same logic as edit page ────────────────────────────────────
 
 function transformCourseToViewState(course) {
