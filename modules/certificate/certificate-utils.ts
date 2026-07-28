@@ -4,15 +4,10 @@ import type { CertificateGrade } from "./certificate.types";
  * Maps a percentage score to a letter grade using the thresholds
  * configured on the course's CertificateTemplate (gradeA/B/C).
  */
-export function computeGrade(
-  percentage: number,
-  gradeA: number,
-  gradeB: number,
-  gradeC: number
-): CertificateGrade {
-  if (percentage >= gradeA) return "A";
-  if (percentage >= gradeB) return "B";
-  if (percentage >= gradeC) return "C";
+export function computeGrade(percentage: number): CertificateGrade {
+  if (percentage >= 90) return "A";
+  if (percentage >= 75) return "B";
+  if (percentage >= 60) return "C";
   if (percentage >= 40) return "D";
   return "Fail";
 }
