@@ -84,11 +84,9 @@ import { NextRequest, NextResponse } from "next/server";
 import puppeteer, { Browser } from "puppeteer";
 
 export async function POST(request: NextRequest) {
-  let browser: Puppeteer.Browser | undefined;
+  let browser: Browser | undefined;
 
   try {
-    const { html } = await request.json();
-
     browser = await puppeteer.launch({
       headless: true,
       args: [
