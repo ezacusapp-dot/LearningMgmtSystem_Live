@@ -81,12 +81,14 @@
 // }
 
 import { NextRequest, NextResponse } from "next/server";
-import puppeteer, { Browser } from "puppeteer";
+import puppeteer from "puppeteer";
 
 export async function POST(request: NextRequest) {
-  let browser: Browser | undefined;
+  let browser = null;
 
   try {
+    const { html }: { html: string } = await request.json();
+
     browser = await puppeteer.launch({
       headless: true,
       args: [
@@ -116,9 +118,7 @@ export async function POST(request: NextRequest) {
 
     await page.evaluate(async () => {
       await document.fonts.ready;
-    });
 
-    await page.evaluate(async () => {
       await Promise.all(
         Array.from(document.images).map((img) => {
           if (img.complete) return Promise.resolve();
@@ -148,7 +148,8 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": 'attachment; filename="certificate.pdf"',
+        "Content-Disposition":
+          'attachment; filename="certificate.pdf"',
       },
     });
   } catch (error: unknown) {
@@ -161,7 +162,9 @@ export async function POST(request: NextRequest) {
             ? error.message
             : "Failed to generate PDF",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   } finally {
     if (browser) {
