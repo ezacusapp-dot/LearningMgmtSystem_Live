@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma, CertificateStatus } from "@prisma/client";
-import type { CertificateListQuery } from "@/types/certificate.types";
+import type { CertificateListQuery } from "./certificate.types";
 
 export const certificateRepository = {
   async findCourseWithCategory(courseId: string) {

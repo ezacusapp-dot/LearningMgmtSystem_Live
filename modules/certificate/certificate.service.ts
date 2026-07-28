@@ -1,16 +1,16 @@
-import { certificateRepository } from "@/repositories/certificate.repository";
+import { certificateRepository } from "./certificate.repository";
 import {
   computeGrade,
   computeExpiryDate,
   generateCertificateNumber,
   buildVerificationUrl,
-} from "@/lib/certificate-utils";
-import type { GenerateCertificateSchemaType } from "@/validations/certificate.validation";
+} from "./certificate-utils";
+import type { GenerateCertificateSchemaType } from "./certificate.validation";
 import type {
   CertificateListQuery,
   RevokeCertificateInput,
   VerifyCertificateResult,
-} from "@/types/certificate.types";
+} from "./certificate.types";
 
 export class CertificateServiceError extends Error {
   statusCode: number;

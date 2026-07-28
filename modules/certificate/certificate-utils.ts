@@ -1,4 +1,4 @@
-import type { CertificateGrade } from "@/types/certificate.types";
+import type { CertificateGrade } from "./certificate.types";
 
 /**
  * Maps a percentage score to a letter grade using the thresholds
