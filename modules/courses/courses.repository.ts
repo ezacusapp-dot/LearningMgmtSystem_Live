@@ -418,8 +418,18 @@ export const updateCourseFullRepo = async (id: string, data: CreateCourseDto) =>
 
       // Delete user_quiz_answers first (this is the blocking constraint)
       // Use camelCase: userQuizAnswers (not user_quiz_answers)
+      // if (questionIds.length > 0) {
+      //   await tx.userQuizAnswer.deleteMany({
+      //     where: {
+      //       questionId: {
+      //         in: questionIds,
+      //       },
+      //     },
+      //   });
+      // }
+      // Delete student quiz answers first (this is the blocking constraint)
       if (questionIds.length > 0) {
-        await tx.userQuizAnswer.deleteMany({
+        await tx.studentQuizAnswer.deleteMany({
           where: {
             questionId: {
               in: questionIds,
