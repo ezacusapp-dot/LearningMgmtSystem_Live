@@ -47,7 +47,6 @@
 //     return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
 //   }
 // }
-
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -60,64 +59,41 @@ export async function GET(
 ) {
   try {
     const studentId = await getStudentIdFromSession(req);
-
     if (!studentId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
 
     const cert = await getCertificateForDownload(id, studentId);
-
     if (!cert.pdfUrl) {
-      return NextResponse.json(
-        { error: "Certificate PDF not available" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Certificate PDF not available" }, { status: 404 });
     }
 
-    const filePath = path.join(
-      process.cwd(),
-      "public",
-      cert.pdfUrl
-    );
+    const filePath = path.join(process.cwd(), "public", cert.pdfUrl);
 
     let fileBuffer: Buffer;
-
     try {
       fileBuffer = await fs.readFile(filePath);
     } catch {
       return NextResponse.json(
-        {
-          error: "Certificate file is missing on the server",
-        },
-        {
-          status: 404,
-        }
+        { error: "Certificate file is missing on the server" },
+        { status: 404 }
       );
     }
 
-    const arrayBuffer = fileBuffer.buffer.slice(
-      fileBuffer.byteOffset,
-      fileBuffer.byteOffset + fileBuffer.byteLength
-    );
+    // Convert Buffer to Uint8Array
+    const fileData = new Uint8Array(fileBuffer);
 
-    return new Response(arrayBuffer, {
+    return new NextResponse(fileData, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${cert.certificateNumber}.pdf"`,
         "Cache-Control": "private, no-store",
       },
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Certificate download error:", error);
-
-    return NextResponse.json(
-      { error: "Certificate not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
   }
 }
