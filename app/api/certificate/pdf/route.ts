@@ -81,10 +81,10 @@
 // }
 
 import { NextRequest, NextResponse } from "next/server";
-import puppeteer from "puppeteer";
+import puppeteer, { Browser } from "puppeteer";
 
 export async function POST(request: NextRequest) {
-  let browser: puppeteer.Browser | undefined;
+  let browser: Puppeteer.Browser | undefined;
 
   try {
     const { html } = await request.json();
