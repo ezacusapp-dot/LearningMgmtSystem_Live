@@ -113,22 +113,35 @@ export const addQuestionToSectionService = async (
     include: { questions: true },
   });
 
-  if (section) {
-    const sectionTotalMarks =
-      section.questions.reduce((sum, q) => sum + q.points, 0) + question.points;
-    await prisma.examSection.update({
-      where: { id: sectionId },
-      data: { totalMarks: sectionTotalMarks },
-    });
+  // if (section) {
+  //   const sectionTotalMarks =
+  //     section.questions.reduce((sum, q) => sum + q.points, 0) + question.points;
+  //   await prisma.examSection.update({
+  //     where: { id: sectionId },
+  //     data: { totalMarks: sectionTotalMarks },
+  //   });
 
+  //   const allSections = await prisma.examSection.findMany({
+  //     where: { examId },
+  //     include: { questions: true },
+  //   });
+  //   const examTotalMarks = allSections.reduce((sum, s) => sum + s.totalMarks, 0);
+  //   await prisma.exam.update({ where: { id: examId }, data: { totalMarks: examTotalMarks } });
+  // }
+
+  if (section) {
+    // ExamSection has no totalMarks column — derive it from its questions
+    // instead of writing it back, then roll that up into the exam total.
     const allSections = await prisma.examSection.findMany({
       where: { examId },
       include: { questions: true },
     });
-    const examTotalMarks = allSections.reduce((sum, s) => sum + s.totalMarks, 0);
+    const examTotalMarks = allSections.reduce(
+      (sum, s) => sum + s.questions.reduce((qSum, q) => qSum + q.points, 0),
+      0
+    );
     await prisma.exam.update({ where: { id: examId }, data: { totalMarks: examTotalMarks } });
   }
-
   return questionData;
 };
 

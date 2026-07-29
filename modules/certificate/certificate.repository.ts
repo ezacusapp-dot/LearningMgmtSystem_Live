@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma, CertificateStatus } from "@prisma/client";
-import type { CertificateListQuery } from "@/types/certificate.types";
+import type { CertificateListQuery } from "./certificate.types";
 
 export const certificateRepository = {
   async findCourseWithCategory(courseId: string) {
@@ -10,13 +10,11 @@ export const certificateRepository = {
     });
   },
 
-  async findTemplateByCourseCategory(categoryId: string) {
-    return prisma.certificateTemplate.findUnique({
-      where: { categoryId },
-      include: { awardCategory: true },
-    });
-  },
-
+async findTemplateByCourse(courseId: string) {
+  return prisma.certificateTemplate.findUnique({
+    where: { courseId },
+  });
+},
   async findStudentById(studentId: number) {
     return prisma.student.findUnique({ where: { id: studentId } });
   },

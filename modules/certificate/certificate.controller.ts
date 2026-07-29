@@ -4,11 +4,11 @@ import {
   generateCertificateSchema,
   revokeCertificateSchema,
   certificateListQuerySchema,
-} from "@/validations/certificate.validation";
+} from "./certificate.validation";
 import {
   certificateService,
   CertificateServiceError,
-} from "@/services/certificate.service";
+} from "./certificate.service";
 
 function handleError(error: unknown) {
   if (error instanceof ZodError) {

@@ -422,7 +422,8 @@ export async function renderCertificatePdf(
     });
 
     // ─── Set HTML content ──────────────────────────────────────────────
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    // await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'networkidle0' as any });
 
     // ─── Wait for the student name to appear (ensures fonts applied) ──
     await page.waitForSelector('.student-name', { timeout: 5000 });
