@@ -1,104 +1,91 @@
 
-// import { NextRequest, NextResponse } from "next/server";
-// import puppeteer from "puppeteer";
+// import { NextResponse } from 'next/server';
+// import puppeteer from 'puppeteer';
 
-// export async function POST(request: NextRequest) {
-//   let browser = null;
-
+// export async function POST(request) {
 //   try {
-//     const { html }: { html: string } = await request.json();
+//     const { html } = await request.json();
 
-//     browser = await puppeteer.launch({
+//     const browser = await puppeteer.launch({
 //       headless: true,
 //       args: [
-//         "--no-sandbox",
-//         "--disable-setuid-sandbox",
-//         "--disable-dev-shm-usage",
-//         "--disable-accelerated-2d-canvas",
-//         "--disable-gpu",
-//         "--font-render-hinting=none",
+//         '--no-sandbox',
+//         '--disable-setuid-sandbox',
+//         '--disable-dev-shm-usage',
+//         '--disable-accelerated-2d-canvas',
+//         '--disable-gpu',
+//         '--font-render-hinting=none',
 //       ],
 //     });
 
 //     const page = await browser.newPage();
 
+//     // Match viewport to the actual certificate size (no scale factor here —
+//     // scale factor blows up page.pdf() dimensions when combined with fixed width/height)
 //     await page.setViewport({
 //       width: 1200,
 //       height: 750,
 //       deviceScaleFactor: 1,
 //     });
 
-//     await page.setContent(html, {
-//       waitUntil: "load",
-//       timeout: 30000,
-//     });
+//    await page.setContent(html, {
+//   waitUntil: 'load',
+//   timeout: 30000,
+// });
 
-//     await page.waitForNetworkIdle();
+// // Wait until there are no active network requests
+// await page.waitForNetworkIdle();
+//     await page.evaluate(() => document.fonts.ready);
 
-//     await page.evaluate(async () => {
-//       await document.fonts.ready;
-
-//       await Promise.all(
-//         Array.from(document.images).map((img) => {
-//           if (img.complete) return Promise.resolve();
-
-//           return new Promise<void>((resolve) => {
-//             img.onload = () => resolve();
-//             img.onerror = () => resolve();
-//           });
-//         })
+//     await page.evaluate(() => {
+//       return Promise.all(
+//         Array.from(document.images)
+//           .filter((img) => !img.complete)
+//           .map(
+//             (img) =>
+//               new Promise((resolve) => {
+//                 img.onload = resolve;
+//                 img.onerror = resolve;
+//               })
+//           )
 //       );
 //     });
 
+//     // Generate PDF at EXACT certificate size — no preferCSSPageSize,
+//     // since there's no @page rule for it to defer to (that was causing
+//     // Puppeteer to fall back to Letter size).
 //     const pdf = await page.pdf({
-//       width: "1200px",
-//       height: "750px",
+//       width: '1200px',
+//       height: '750px',
 //       printBackground: true,
-//       margin: {
-//         top: "0px",
-//         right: "0px",
-//         bottom: "0px",
-//         left: "0px",
-//       },
-//       pageRanges: "1",
+//       margin: { top: 0, right: 0, bottom: 0, left: 0 },
+//       pageRanges: '1',
 //     });
 
-//     return new Response(pdf, {
+//     await browser.close();
+
+//     return new NextResponse(pdf, {
 //       status: 200,
 //       headers: {
-//         "Content-Type": "application/pdf",
-//         "Content-Disposition":
-//           'attachment; filename="certificate.pdf"',
+//         'Content-Type': 'application/pdf',
+//         'Content-Disposition': 'attachment; filename=certificate.pdf',
 //       },
 //     });
-//   } catch (error: unknown) {
-//     console.error("PDF generation error:", error);
-
+//   } catch (error) {
+//     console.error('PDF generation error:', error);
 //     return NextResponse.json(
-//       {
-//         error:
-//           error instanceof Error
-//             ? error.message
-//             : "Failed to generate PDF",
-//       },
-//       {
-//         status: 500,
-//       }
+//       { error: 'Failed to generate PDF: ' + error.message },
+//       { status: 500 }
 //     );
-//   } finally {
-//     if (browser) {
-//       await browser.close();
-//     }
 //   }
 // }
-
 
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 30; // bump timeout — Hobby plan max is 60s, Pro higher
 
 export async function POST(request: NextRequest) {
   let browser = null;
@@ -106,70 +93,35 @@ export async function POST(request: NextRequest) {
   try {
     const { html }: { html: string } = await request.json();
 
-    if (!html || typeof html !== "string") {
-      return NextResponse.json(
-        { error: "No certificate HTML was provided." },
-        { status: 400 }
-      );
-    }
-
-    const isLocal = process.env.NODE_ENV === "development";
-
-    // On Vercel/production this is always false — @sparticuz/chromium's
-    // bundled binary is used instead, no env var needed there.
-    const executablePath = isLocal
-      ? process.env.PUPPETEER_EXECUTABLE_PATH
-      : await chromium.executablePath();
-
-    if (isLocal && !executablePath) {
-      console.error(
-        "PUPPETEER_EXECUTABLE_PATH is not set. Add it to .env.local pointing at your local Chrome install, e.g.\n" +
-          "PUPPETEER_EXECUTABLE_PATH=C:/Program Files/Google/Chrome/Application/chrome.exe"
-      );
-      return NextResponse.json(
-        { error: "PDF generation is not configured for local development." },
-        { status: 500 }
-      );
-    }
+    const isLocal = !process.env.VERCEL; // or use process.env.NODE_ENV !== "production"
 
     browser = await puppeteer.launch({
       args: isLocal
         ? ["--no-sandbox", "--disable-setuid-sandbox"]
         : chromium.args,
       defaultViewport: { width: 1200, height: 750 },
-      executablePath,
-      headless: true,
+      executablePath: isLocal
+        ? process.env.CHROME_PATH || // set this locally to your Chrome path, or install puppeteer as a devDependency too
+          "/usr/bin/google-chrome" // adjust for your OS
+        : await chromium.executablePath(),
+      headless: isLocal ? true : chromium.headless,
     });
 
     const page = await browser.newPage();
-
-    await page.setViewport({
-      width: 1200,
-      height: 750,
-      deviceScaleFactor: 1,
-    });
-
-    await page.setContent(html, {
-      waitUntil: "load",
-      timeout: 30000,
-    });
-
-    await page.waitForNetworkIdle({ timeout: 10000 }).catch(() => {
-      // Non-fatal — some environments never go fully idle (e.g. web fonts
-      // polling). We still wait for fonts/images explicitly below.
-    });
+    await page.setContent(html, { waitUntil: "load", timeout: 30000 });
+    await page.waitForNetworkIdle();
 
     await page.evaluate(async () => {
       await document.fonts.ready;
-
       await Promise.all(
-        Array.from(document.images).map((img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-          });
-        })
+        Array.from(document.images).map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise<void>((res) => {
+                img.onload = () => res();
+                img.onerror = () => res();
+              })
+        )
       );
     });
 
@@ -189,19 +141,12 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error("PDF generation error:", error);
-
+    console.error("PDF generation error:", error); // check Vercel function logs — this will show the real error
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Failed to generate PDF",
-      },
+      { error: error instanceof Error ? error.message : "Failed to generate PDF" },
       { status: 500 }
     );
   } finally {
-    if (browser) {
-      await browser.close().catch(() => {
-        // Ignore close errors — browser may have already crashed/exited.
-      });
-    }
+    if (browser) await browser.close();
   }
 }
