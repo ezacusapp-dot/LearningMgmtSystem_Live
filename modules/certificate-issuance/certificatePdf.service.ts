@@ -1,7 +1,7 @@
-import puppeteer from 'puppeteer';
+import type { Browser } from 'puppeteer-core';
 import fs from 'fs/promises';
 import path from 'path';
-import { put } from '@vercel/blob';
+// import { put } from '@vercel/blob';
 import type { CertificateTemplate } from '@prisma/client';
 
 export interface CertificatePdfData {
@@ -394,6 +394,8 @@ function buildCertificateHtml(template: CertificateTemplate, data: CertificatePd
 </html>`;
 }
 
+
+
 async function saveToDisk(certificateNumber: string, pdfBuffer: Buffer): Promise<string> {
   const dir = path.join(process.cwd(), 'public', 'certificates');
   await fs.mkdir(dir, { recursive: true });
@@ -409,6 +411,30 @@ async function saveToDisk(certificateNumber: string, pdfBuffer: Buffer): Promise
 //   );
 //   return blob.url;
 // }
+async function launchBrowser(): Promise<Browser> {
+  const isServerless =
+    !!process.env.VERCEL ||
+    !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    !!process.env.NEXT_RUNTIME; // adjust to whatever signals "not my laptop"
+
+  if (isServerless) {
+    const chromium = (await import('@sparticuz/chromium')).default;
+    const puppeteerCore = await import('puppeteer-core');
+
+  return puppeteerCore.launch({
+  args: chromium.args,
+  executablePath: await chromium.executablePath(),
+  headless: true,
+});
+  }
+
+  // Local dev: use full puppeteer, which manages its own Chrome download.
+  const puppeteer = await import('puppeteer');
+  return puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  }) as unknown as Browser;
+}
 
 export async function renderCertificatePdf(
   template: CertificateTemplate,
@@ -416,39 +442,27 @@ export async function renderCertificatePdf(
 ): Promise<{ pdfUrl: string }> {
   const html = buildCertificateHtml(template, data);
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
+  const browser = await launchBrowser();
 
   try {
     const page = await browser.newPage();
-
-    await page.setViewport({
-      width: 1120,
-      height: 792,
-      deviceScaleFactor: 2,
-    });
-
-    // ─── Set HTML content ──────────────────────────────────────────────
-    // await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setViewport({ width: 1120, height: 792, deviceScaleFactor: 2 });
     await page.setContent(html, { waitUntil: 'networkidle0' as any });
-
-    // ─── Wait for the student name to appear (ensures fonts applied) ──
     await page.waitForSelector('.student-name', { timeout: 5000 });
 
-    // ─── Wait for all images to fully load ──────────────────────────
     await page.evaluate(() => {
       return Promise.all(
         Array.from(document.images)
-          .filter(img => !img.complete)
-          .map(img => new Promise(resolve => {
-            img.onload = img.onerror = resolve;
-          }))
+          .filter((img) => !img.complete)
+          .map(
+            (img) =>
+              new Promise((resolve) => {
+                img.onload = img.onerror = resolve;
+              })
+          )
       );
     });
 
-    // ─── Now generate the PDF ────────────────────────────────────────────
     const pdfBuffer = await page.pdf({
       width: '1120px',
       height: '792px',
