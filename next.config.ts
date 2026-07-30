@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["paseto"],
+  serverExternalPackages: ["paseto", "@sparticuz/chromium", "puppeteer-core"],
   allowedDevOrigins: ["*"], // ✅ allow all origins
 };
 
