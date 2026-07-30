@@ -82,10 +82,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
-
-export const runtime = "nodejs";
-export const maxDuration = 30; // bump timeout — Hobby plan max is 60s, Pro higher
+import chromium from "@sparticuz/chromium"
 
 export async function POST(request: NextRequest) {
   let browser = null;
@@ -93,35 +90,45 @@ export async function POST(request: NextRequest) {
   try {
     const { html }: { html: string } = await request.json();
 
-    const isLocal = !process.env.VERCEL; // or use process.env.NODE_ENV !== "production"
-
     browser = await puppeteer.launch({
-      args: isLocal
-        ? ["--no-sandbox", "--disable-setuid-sandbox"]
-        : chromium.args,
-      defaultViewport: { width: 1200, height: 750 },
-      executablePath: isLocal
-        ? process.env.CHROME_PATH || // set this locally to your Chrome path, or install puppeteer as a devDependency too
-          "/usr/bin/google-chrome" // adjust for your OS
-        : await chromium.executablePath(),
-      headless: isLocal ? true : chromium.headless,
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--disable-gpu",
+        "--font-render-hinting=none",
+      ],
     });
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load", timeout: 30000 });
+
+    await page.setViewport({
+      width: 1200,
+      height: 750,
+      deviceScaleFactor: 1,
+    });
+
+    await page.setContent(html, {
+      waitUntil: "load",
+      timeout: 30000,
+    });
+
     await page.waitForNetworkIdle();
 
     await page.evaluate(async () => {
       await document.fonts.ready;
+
       await Promise.all(
-        Array.from(document.images).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise<void>((res) => {
-                img.onload = () => res();
-                img.onerror = () => res();
-              })
-        )
+        Array.from(document.images).map((img) => {
+          if (img.complete) return Promise.resolve();
+
+          return new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+        })
       );
     });
 
@@ -129,7 +136,12 @@ export async function POST(request: NextRequest) {
       width: "1200px",
       height: "750px",
       printBackground: true,
-      margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
+      margin: {
+        top: "0px",
+        right: "0px",
+        bottom: "0px",
+        left: "0px",
+      },
       pageRanges: "1",
     });
 
@@ -137,16 +149,27 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": 'attachment; filename="certificate.pdf"',
+        "Content-Disposition":
+          'attachment; filename="certificate.pdf"',
       },
     });
   } catch (error: unknown) {
-    console.error("PDF generation error:", error); // check Vercel function logs — this will show the real error
+    console.error("PDF generation error:", error);
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to generate PDF" },
-      { status: 500 }
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate PDF",
+      },
+      {
+        status: 500,
+      }
     );
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 }
