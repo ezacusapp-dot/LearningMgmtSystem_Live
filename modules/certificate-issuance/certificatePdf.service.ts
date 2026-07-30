@@ -394,21 +394,21 @@ function buildCertificateHtml(template: CertificateTemplate, data: CertificatePd
 </html>`;
 }
 
-// async function saveToDisk(certificateNumber: string, pdfBuffer: Buffer): Promise<string> {
-//   const dir = path.join(process.cwd(), 'public', 'certificates');
-//   await fs.mkdir(dir, { recursive: true });
-//   const filename = `${certificateNumber}.pdf`;
-//   await fs.writeFile(path.join(dir, filename), pdfBuffer);
-//   return `/certificates/${filename}`;
-// }
 async function saveToDisk(certificateNumber: string, pdfBuffer: Buffer): Promise<string> {
-  const blob = await put(
-    `certificates/${certificateNumber}.pdf`,
-    pdfBuffer,
-    { access: 'public', contentType: 'application/pdf' }
-  );
-  return blob.url;
+  const dir = path.join(process.cwd(), 'public', 'certificates');
+  await fs.mkdir(dir, { recursive: true });
+  const filename = `${certificateNumber}.pdf`;
+  await fs.writeFile(path.join(dir, filename), pdfBuffer);
+  return `/certificates/${filename}`;
 }
+// async function saveToDisk(certificateNumber: string, pdfBuffer: Buffer): Promise<string> {
+//   const blob = await put(
+//     `certificates/${certificateNumber}.pdf`,
+//     pdfBuffer,
+//     { access: 'public', contentType: 'application/pdf' }
+//   );
+//   return blob.url;
+// }
 
 export async function renderCertificatePdf(
   template: CertificateTemplate,
