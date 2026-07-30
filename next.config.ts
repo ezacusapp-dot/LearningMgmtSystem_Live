@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["paseto", "@sparticuz/chromium", "puppeteer-core"],
-  allowedDevOrigins: ["*"], // ✅ allow all origins
+  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
+  allowedDevOrigins: ["*"],
   outputFileTracingIncludes: {
-    "/api/certificate/pdf": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+    "/api/student/certificates/[id]/download": ["./node_modules/@sparticuz/chromium/bin/**/*"],
   },
 };
 
