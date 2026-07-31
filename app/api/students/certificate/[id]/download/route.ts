@@ -48,8 +48,6 @@
 //   }
 // }
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { getStudentIdFromSession } from "@/lib/auth";
 import { getCertificateForDownload } from "@/modules/certificate-issuance/certificateIssuance.service";
 
@@ -70,22 +68,25 @@ export async function GET(
       return NextResponse.json({ error: "Certificate PDF not available" }, { status: 404 });
     }
 
-    const filePath = path.join(process.cwd(), "public", cert.pdfUrl);
-
-    let fileBuffer: Buffer;
-    try {
-      fileBuffer = await fs.readFile(filePath);
-    } catch {
+    // 🔑 cert.pdfUrl is now a full Vercel Blob URL (e.g.
+    // https://xxxx.public.blob.vercel-storage.com/certificates/CERT-...pdf)
+    // instead of a local /certificates/... path, since PDFs are generated
+    // and stored in Vercel Blob rather than on local disk (which doesn't
+    // persist on Vercel's serverless filesystem). Fetch it and stream the
+    // bytes back to the client with our own attachment headers, so the
+    // download still gets a clean filename and forces a save dialog
+    // rather than opening inline.
+    const blobRes = await fetch(cert.pdfUrl);
+    if (!blobRes.ok) {
       return NextResponse.json(
         { error: "Certificate file is missing on the server" },
         { status: 404 }
       );
     }
 
-    // Convert Buffer to Uint8Array
-    const fileData = new Uint8Array(fileBuffer);
+    const fileBuffer = await blobRes.arrayBuffer();
 
-    return new NextResponse(fileData, {
+    return new NextResponse(fileBuffer, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${cert.certificateNumber}.pdf"`,
