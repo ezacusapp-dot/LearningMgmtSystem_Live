@@ -1,16 +1,16 @@
-import { certificateRepository } from "@/repositories/certificate.repository";
+import { certificateRepository } from "./certificate.repository";
 import {
   computeGrade,
   computeExpiryDate,
   generateCertificateNumber,
   buildVerificationUrl,
-} from "@/lib/certificate-utils";
-import type { GenerateCertificateSchemaType } from "@/validations/certificate.validation";
+} from "./certificate-utils";
+import type { GenerateCertificateSchemaType } from "./certificate.validation";
 import type {
   CertificateListQuery,
   RevokeCertificateInput,
   VerifyCertificateResult,
-} from "@/types/certificate.types";
+} from "./certificate.types";
 
 export class CertificateServiceError extends Error {
   statusCode: number;
@@ -35,113 +35,93 @@ export const certificateService = {
    * this student+course, that existing certificate is returned instead
    * of creating a duplicate.
    */
-  async generateCertificate(input: GenerateCertificateSchemaType) {
-    const { studentId, courseId, examAttemptId } = input;
+async generateCertificate(input: GenerateCertificateSchemaType) {
+  const { studentId, courseId, examAttemptId } = input;
 
-    const student = await certificateRepository.findStudentById(studentId);
-    if (!student) throw new CertificateServiceError("Student not found", 404);
+  const student = await certificateRepository.findStudentById(studentId);
+  if (!student) throw new CertificateServiceError("Student not found", 404);
 
-    const course = await certificateRepository.findCourseWithCategory(courseId);
-    if (!course) throw new CertificateServiceError("Course not found", 404);
-    if (!course.courseCategory) {
-      throw new CertificateServiceError(
-        "Course is not linked to a course category",
-        422
-      );
-    }
-
-    const template = await certificateRepository.findTemplateByCourseCategory(
-      course.courseCategory.id
+  const course = await certificateRepository.findCourseWithCategory(courseId);
+  if (!course) throw new CertificateServiceError("Course not found", 404);
+  if (!course.courseCategory) {
+    throw new CertificateServiceError(
+      "Course is not linked to a course category",
+      422
     );
-    if (!template) {
-      throw new CertificateServiceError(
-        "No certificate template configured for this course's category",
-        422
-      );
-    }
+  }
 
-    const examAttempt = await certificateRepository.findExamAttemptById(
-      examAttemptId
+  const template = await certificateRepository.findTemplateByCourse(courseId);
+  if (!template) {
+    throw new CertificateServiceError(
+      "No certificate template configured for this course",
+      422
     );
-    if (!examAttempt) {
-      throw new CertificateServiceError("Exam attempt not found", 404);
-    }
-    if (examAttempt.exam.courseId !== courseId) {
-      throw new CertificateServiceError(
-        "Exam attempt does not belong to the specified course",
-        422
-      );
-    }
-    if (examAttempt.exam.examType !== "FINAL") {
-      throw new CertificateServiceError(
-        "Certificates can only be issued from a FINAL exam attempt",
-        422
-      );
-    }
-    if (!examAttempt.isPassed) {
-      throw new CertificateServiceError(
-        "Student has not passed the final exam",
-        422
-      );
-    }
+  }
 
-    const percentage =
-      examAttempt.percentage ??
-      (examAttempt.score / (examAttempt.exam.totalMarks || 1)) * 100;
-
-    if (percentage < template.passThreshold) {
-      throw new CertificateServiceError(
-        `Score ${percentage.toFixed(2)}% is below the pass threshold of ${template.passThreshold}%`,
-        422
-      );
-    }
-
-    const existing = await certificateRepository.findExistingByStudentAndCourse(
-      studentId,
-      courseId
+  const examAttempt = await certificateRepository.findExamAttemptById(examAttemptId);
+  if (!examAttempt) {
+    throw new CertificateServiceError("Exam attempt not found", 404);
+  }
+  if (examAttempt.exam.courseId !== courseId) {
+    throw new CertificateServiceError(
+      "Exam attempt does not belong to the specified course",
+      422
     );
-    if (existing) return existing;
-
-    const grade = computeGrade(
-      percentage,
-      template.gradeA,
-      template.gradeB,
-      template.gradeC
+  }
+  if (examAttempt.exam.examType !== "FINAL") {
+    throw new CertificateServiceError(
+      "Certificates can only be issued from a FINAL exam attempt",
+      422
     );
-    const expiresAt = computeExpiryDate(template.validityPeriod);
-    const sequence = (await certificateRepository.countAll()) + 1;
-    const certificateNumber = generateCertificateNumber(
-      course.courseCategory.code,
-      sequence
+  }
+  if (!examAttempt.isPassed) {
+    throw new CertificateServiceError(
+      "Student has not passed the final exam",
+      422
     );
-    const verificationUrl = buildVerificationUrl(APP_BASE_URL, certificateNumber);
+  }
 
-    const studentFullName = [student.firstName, student.middleName, student.lastName]
-      .filter(Boolean)
-      .join(" ");
+  const percentage =
+    examAttempt.percentage ??
+    (examAttempt.score / (examAttempt.exam.totalMarks || 1)) * 100;
 
-    const certificate = await certificateRepository.create({
-      certificateNumber,
-      score: examAttempt.score,
-      percentage,
-      grade,
-      awardCategory: template.awardCategory?.name ?? null,
-      status: "Issued",
-      issuedAt: new Date(),
-      expiresAt,
-      verificationUrl,
-      studentNameSnapshot: studentFullName,
-      courseNameSnapshot: course.title,
-      categoryNameSnapshot: course.courseCategory.name,
-      student: { connect: { id: studentId } },
-      course: { connect: { id: courseId } },
-      template: { connect: { id: template.id } },
-      examAttempt: { connect: { id: examAttemptId } },
-    });
+  const existing = await certificateRepository.findExistingByStudentAndCourse(
+    studentId,
+    courseId
+  );
+  if (existing) return existing;
 
-    return certificate;
-  },
+  const grade = computeGrade(percentage); // see updated signature below
+  const sequence = (await certificateRepository.countAll()) + 1;
+  const certificateNumber = generateCertificateNumber(
+    course.courseCategory.code,
+    sequence
+  );
+  const verificationUrl = buildVerificationUrl(APP_BASE_URL, certificateNumber);
 
+  const studentFullName = [student.firstName, student.middleName, student.lastName]
+    .filter(Boolean)
+    .join(" ");
+
+  const certificate = await certificateRepository.create({
+    certificateNumber,
+    score: examAttempt.score,
+    percentage,
+    grade,
+    status: "Issued",
+    issuedAt: new Date(),
+    expiresAt: null, // see note below on validity policy
+    verificationUrl,
+    studentNameSnapshot: studentFullName,
+    courseNameSnapshot: course.title,
+    student: { connect: { id: studentId } },
+    course: { connect: { id: courseId } },
+    template: { connect: { id: template.id } },
+    examAttempt: { connect: { id: examAttemptId } },
+  });
+
+  return certificate;
+},
   async getCertificateById(id: string) {
     const certificate = await certificateRepository.findById(id);
     if (!certificate) throw new CertificateServiceError("Certificate not found", 404);
