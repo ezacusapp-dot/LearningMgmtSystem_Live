@@ -247,31 +247,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pdf = await page.pdf({
-      width: "1200px",
-      height: "750px",
-      printBackground: true,
-      preferCSSPageSize: false,
-      scale: 1,
-      pageRanges: "1",
-      displayHeaderFooter: false,
-      margin: {
-        top: "0px",
-        right: "0px",
-        bottom: "0px",
-        left: "0px",
-      },
-    });
+   const pdf = await page.pdf({
+  width: "1200px",
+  height: "750px",
+  printBackground: true,
+  preferCSSPageSize: false,
+  scale: 1,
+  pageRanges: "1",
+  displayHeaderFooter: false,
+  margin: {
+    top: "0px",
+    right: "0px",
+    bottom: "0px",
+    left: "0px",
+  },
+});
 
-    return new Response(pdf, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition":
-          'attachment; filename="certificate.pdf"',
-        "Content-Length": String(pdf.length),
-      },
-    });
+return new Response(Buffer.from(pdf), {
+  status: 200,
+  headers: {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": 'attachment; filename="certificate.pdf"',
+    "Content-Length": String(pdf.length),
+  },
+});
   } catch (error: unknown) {
     console.error("PDF generation error:", error);
 
