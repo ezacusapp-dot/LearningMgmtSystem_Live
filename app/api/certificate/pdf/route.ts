@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
     });
 
     await page.setContent(html, {
-      waitUntil: "networkidle0",
+       waitUntil: "load",
       timeout: 30000,
     });
 
