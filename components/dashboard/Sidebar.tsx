@@ -74,8 +74,8 @@ const mainNav: NavItem[] = [
          { label: "Duration Type",   href: "/admin/dashboard/master/duration" },
            { label: "Levels",           href: "/admin/dashboard/master/levels" },
   { label: "Course Category", href: "/admin/dashboard/master/course-categories" },
-   { label: "Certificate Template",          href: "/admin/dashboard/master/Certificate-template-builder" }, 
-   { label: "Gradewise Certificate",          href: "/admin/dashboard/master/grade-wise-certificate" },
+   { label: "Course Certificate",          href: "/admin/dashboard/master/Certificate-template-builder" }, 
+   { label: "Exam Certificate",          href: "/admin/dashboard/master/grade-wise-certificate" },
     { label: "Grades",          href: "/admin/dashboard/master/grade" },
 
 

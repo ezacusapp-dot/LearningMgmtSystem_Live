@@ -1,87 +1,10 @@
 
-// import { NextResponse } from 'next/server';
-// import puppeteer from 'puppeteer';
-
-// export async function POST(request) {
-//   try {
-//     const { html } = await request.json();
-
-//     const browser = await puppeteer.launch({
-//       headless: true,
-//       args: [
-//         '--no-sandbox',
-//         '--disable-setuid-sandbox',
-//         '--disable-dev-shm-usage',
-//         '--disable-accelerated-2d-canvas',
-//         '--disable-gpu',
-//         '--font-render-hinting=none',
-//       ],
-//     });
-
-//     const page = await browser.newPage();
-
-//     // Match viewport to the actual certificate size (no scale factor here —
-//     // scale factor blows up page.pdf() dimensions when combined with fixed width/height)
-//     await page.setViewport({
-//       width: 1200,
-//       height: 750,
-//       deviceScaleFactor: 1,
-//     });
-
-//    await page.setContent(html, {
-//   waitUntil: 'load',
-//   timeout: 30000,
-// });
-
-// // Wait until there are no active network requests
-// await page.waitForNetworkIdle();
-//     await page.evaluate(() => document.fonts.ready);
-
-//     await page.evaluate(() => {
-//       return Promise.all(
-//         Array.from(document.images)
-//           .filter((img) => !img.complete)
-//           .map(
-//             (img) =>
-//               new Promise((resolve) => {
-//                 img.onload = resolve;
-//                 img.onerror = resolve;
-//               })
-//           )
-//       );
-//     });
-
-//     // Generate PDF at EXACT certificate size — no preferCSSPageSize,
-//     // since there's no @page rule for it to defer to (that was causing
-//     // Puppeteer to fall back to Letter size).
-//     const pdf = await page.pdf({
-//       width: '1200px',
-//       height: '750px',
-//       printBackground: true,
-//       margin: { top: 0, right: 0, bottom: 0, left: 0 },
-//       pageRanges: '1',
-//     });
-
-//     await browser.close();
-
-//     return new NextResponse(pdf, {
-//       status: 200,
-//       headers: {
-//         'Content-Type': 'application/pdf',
-//         'Content-Disposition': 'attachment; filename=certificate.pdf',
-//       },
-//     });
-//   } catch (error) {
-//     console.error('PDF generation error:', error);
-//     return NextResponse.json(
-//       { error: 'Failed to generate PDF: ' + error.message },
-//       { status: 500 }
-//     );
-//   }
-// }
-
 // import { NextRequest, NextResponse } from "next/server";
-// import puppeteer from "puppeteer";
+// import puppeteer from "puppeteer-core";
+// import chromium from "@sparticuz/chromium";
+
+// export const runtime = "nodejs";
+// export const maxDuration = 30;
 
 // export async function POST(request: NextRequest) {
 //   let browser = null;
@@ -89,25 +12,25 @@
 //   try {
 //     const { html }: { html: string } = await request.json();
 
+//     const isLocal = !process.env.VERCEL;
+
 //     browser = await puppeteer.launch({
+//       args: isLocal
+//         ? ["--no-sandbox", "--disable-setuid-sandbox"]
+//         : chromium.args,
+//       defaultViewport: {
+//         width: 1200,
+//         height: 750,
+//         deviceScaleFactor: 1,
+//       },
+//       executablePath: isLocal
+//         ? process.env.CHROME_PATH ||
+//           "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" // adjust for Windows/Mac/Linux if running locally
+//         : await chromium.executablePath(),
 //       headless: true,
-//       args: [
-//         "--no-sandbox",
-//         "--disable-setuid-sandbox",
-//         "--disable-dev-shm-usage",
-//         "--disable-accelerated-2d-canvas",
-//         "--disable-gpu",
-//         "--font-render-hinting=none",
-//       ],
 //     });
 
 //     const page = await browser.newPage();
-
-//     await page.setViewport({
-//       width: 1200,
-//       height: 750,
-//       deviceScaleFactor: 1,
-//     });
 
 //     await page.setContent(html, {
 //       waitUntil: "load",
@@ -148,8 +71,7 @@
 //       status: 200,
 //       headers: {
 //         "Content-Type": "application/pdf",
-//         "Content-Disposition":
-//           'attachment; filename="certificate.pdf"',
+//         "Content-Disposition": 'attachment; filename="certificate.pdf"',
 //       },
 //     });
 //   } catch (error: unknown) {
@@ -172,7 +94,6 @@
 //     }
 //   }
 // }
-
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
@@ -181,73 +102,175 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
-  let browser = null;
+  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
 
   try {
-    const { html }: { html: string } = await request.json();
+    const { html }: { html?: string } = await request.json();
+
+    if (!html) {
+      return NextResponse.json(
+        { error: "HTML content is required" },
+        { status: 400 }
+      );
+    }
 
     const isLocal = !process.env.VERCEL;
 
     browser = await puppeteer.launch({
-      args: isLocal
-        ? ["--no-sandbox", "--disable-setuid-sandbox"]
-        : chromium.args,
+      args: [
+        ...(isLocal
+          ? ["--no-sandbox", "--disable-setuid-sandbox"]
+          : chromium.args),
+        "--disable-gpu",
+        "--hide-scrollbars",
+        "--font-render-hinting=none",
+      ],
+
+      executablePath: isLocal
+        ? process.env.CHROME_PATH ||
+          "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        : await chromium.executablePath(),
+
+      headless: true,
+
       defaultViewport: {
         width: 1200,
         height: 750,
         deviceScaleFactor: 1,
+        isMobile: false,
+        hasTouch: false,
       },
-      executablePath: isLocal
-        ? process.env.CHROME_PATH ||
-          "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" // adjust for Windows/Mac/Linux if running locally
-        : await chromium.executablePath(),
-      headless: true,
     });
 
     const page = await browser.newPage();
 
+    await page.setViewport({
+      width: 1200,
+      height: 750,
+      deviceScaleFactor: 1,
+      isMobile: false,
+      hasTouch: false,
+    });
+
     await page.setContent(html, {
-      waitUntil: "load",
+       waitUntil: "load",
       timeout: 30000,
     });
 
-    await page.waitForNetworkIdle();
+    await page.emulateMediaType("screen");
 
     await page.evaluate(async () => {
-      await document.fonts.ready;
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+
+      const images = Array.from(document.images);
 
       await Promise.all(
-        Array.from(document.images).map((img) => {
-          if (img.complete) return Promise.resolve();
+        images.map((img) => {
+          if (img.complete && img.naturalWidth > 0) {
+            return Promise.resolve();
+          }
 
           return new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
+            const done = () => resolve();
+
+            img.addEventListener("load", done, { once: true });
+            img.addEventListener("error", done, { once: true });
           });
         })
       );
+
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve())
+      );
+
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve())
+      );
     });
 
-    const pdf = await page.pdf({
-      width: "1200px",
-      height: "750px",
-      printBackground: true,
-      margin: {
-        top: "0px",
-        right: "0px",
-        bottom: "0px",
-        left: "0px",
-      },
-      pageRanges: "1",
+    await page.addStyleTag({
+      content: `
+        @page {
+          size: 1200px 750px;
+          margin: 0;
+        }
+
+        html,
+        body {
+          width: 1200px !important;
+          height: 750px !important;
+          min-width: 1200px !important;
+          min-height: 750px !important;
+          max-width: 1200px !important;
+          max-height: 750px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          background: #ffffff !important;
+        }
+
+        body {
+          display: block !important;
+        }
+
+        .certificate-wrapper {
+          width: 1200px !important;
+          height: 750px !important;
+          min-width: 1200px !important;
+          min-height: 750px !important;
+          max-width: 1200px !important;
+          max-height: 750px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          box-shadow: none !important;
+        }
+
+        *,
+        *::before,
+        *::after {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      `,
     });
 
-    return new Response(pdf, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": 'attachment; filename="certificate.pdf"',
-      },
+    const certificateExists = await page.evaluate(() => {
+      return Boolean(document.querySelector(".certificate-wrapper"));
     });
+
+    if (!certificateExists) {
+      throw new Error(
+        "Certificate wrapper (.certificate-wrapper) was not found."
+      );
+    }
+
+   const pdf = await page.pdf({
+  width: "1200px",
+  height: "750px",
+  printBackground: true,
+  preferCSSPageSize: false,
+  scale: 1,
+  pageRanges: "1",
+  displayHeaderFooter: false,
+  margin: {
+    top: "0px",
+    right: "0px",
+    bottom: "0px",
+    left: "0px",
+  },
+});
+
+return new Response(Buffer.from(pdf), {
+  status: 200,
+  headers: {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": 'attachment; filename="certificate.pdf"',
+    "Content-Length": String(pdf.length),
+  },
+});
   } catch (error: unknown) {
     console.error("PDF generation error:", error);
 
@@ -258,13 +281,15 @@ export async function POST(request: NextRequest) {
             ? error.message
             : "Failed to generate PDF",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   } finally {
     if (browser) {
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (error) {
+        console.error("Browser close error:", error);
+      }
     }
   }
 }
