@@ -312,7 +312,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                                         </span>
                                     </button>
                                     {/* Register Link */}
-                                    <div className="text-center pt-2">
+                                    {/* <div className="text-center pt-2">
                                         <p className="text-[var(--text-secondary)]">
                                             Don&apos;t have an account?{" "}
                                             <a
@@ -322,7 +322,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                                                 Create Account
                                             </a>
                                         </p>
-                                    </div>
+                                    </div> */}
                                 </form>
                             </div>
                         </div>
