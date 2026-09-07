@@ -38,17 +38,17 @@ type NavItem = {
 const MAIN_NAV: NavItem[] = [
   { label: "Dashboard", href: "/student", icon: <LayoutDashboard size={18} /> },
   { label: "My Courses", href: "/student/courses/", icon: <BookOpen size={18} /> },
-  { label: "Assignments", href: "/student/", icon: <FileText size={18} /> },
+  // { label: "Assignments", href: "/student/", icon: <FileText size={18} /> },
   { label: "Exams & Tests", href: "/student/exams", icon: <Award size={18} /> },
   { label: "My Grades", href: "/student/", icon: <BarChart3 size={18} /> },
   { label: "Certificate", href: "/student/certificate", icon: <Award size={18} /> },
-  { label: "Leaderboard", href: "/student/", icon: <AwardIcon  size={18} /> },
+  // { label: "Leaderboard", href: "/student/", icon: <AwardIcon  size={18} /> },
   { label: " Profile", href: "/student/", icon: <User  size={18} /> },
 ];
 
-const SETTINGS_NAV: NavItem[] = [
-  { label: "Settings", href: "/dashboard/settings", icon: <Settings size={18} /> },
-];
+// const SETTINGS_NAV: NavItem[] = [
+//   { label: "Settings", href: "/dashboard/settings", icon: <Settings size={18} /> },
+// ];
 
 /* ======================================================
    COMPONENT
@@ -141,13 +141,13 @@ export default function StudentSidebar({ collapsed }: SidebarProps) {
 
           <div className="mt-4 border-t border-slate-800" />
 
-          {!collapsed && (
+          {/* {!collapsed && (
             <p className="text-[10px] uppercase tracking-widest text-slate-500 px-3 pt-2 pb-1">
               Settings
             </p>
           )}
 
-          {SETTINGS_NAV.map(renderNavItem)}
+          {SETTINGS_NAV.map(renderNavItem)} */}
         </nav>
       </div>
 

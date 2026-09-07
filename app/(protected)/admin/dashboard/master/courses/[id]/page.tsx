@@ -278,7 +278,14 @@ export default function CourseEditPage() {
   const [uploadTarget,   setUploadTarget]   = useState(null);
   const [uploadFile,     setUploadFile]     = useState(null);
   const [videoLinkDraft, setVideoLinkDraft] = useState(["", "", ""]);
+
+  const [draggedModuleId, setDraggedModuleId] = useState(null);
+const [dragOverModuleId, setDragOverModuleId] = useState(null);
+
+const [draggedLesson, setDraggedLesson] = useState(null); // { moduleId, lessonId }
+const [dragOverLesson, setDragOverLesson] = useState(null); 
   const fileInputRef = useRef(null);
+
   const [enums, setEnums] = useState({ difficulties: [], bloomLevels: [], questionTypes: [] });
 
   // ── Load master data + course ──────────────────────────────────────────────
@@ -587,11 +594,40 @@ reader.onload = (ev) => {
     setStep(n);
   };
 
+  // ── Reorder modules ──
+const reorderModules = (fromId, toId) => {
+  if (fromId === toId) return;
+  setModules(prev => {
+    const arr = [...prev];
+    const fromIdx = arr.findIndex(m => m.id === fromId);
+    const toIdx   = arr.findIndex(m => m.id === toId);
+    if (fromIdx === -1 || toIdx === -1) return prev;
+    const [moved] = arr.splice(fromIdx, 1);
+    arr.splice(toIdx, 0, moved);
+    return arr.map((m, i) => ({ ...m, order: i + 1 }));
+  });
+};
+
+// ── Reorder lessons within a module ──
+const reorderLessons = (moduleId, fromId, toId) => {
+  if (fromId === toId) return;
+  setModules(prev => prev.map(m => {
+    if (m.id !== moduleId) return m;
+    const lessons = [...m.lessons];
+    const fromIdx = lessons.findIndex(l => l.id === fromId);
+    const toIdx   = lessons.findIndex(l => l.id === toId);
+    if (fromIdx === -1 || toIdx === -1) return m;
+    const [moved] = lessons.splice(fromIdx, 1);
+    lessons.splice(toIdx, 0, moved);
+    return { ...m, lessons: lessons.map((l, i) => ({ ...l, order: i + 1 })) };
+  }));
+};
+
   const stepConfig = [
     { num: 1, label: "Course Info"   },
     { num: 2, label: "Modules"       },
-    { num: 3, label: "Timeline"      },
-    { num: 4, label: "Tests & Rules" },
+    // { num: 3, label: "Timeline"      },
+    { num: 3, label: "Tests & Rules" },
   ];
 
   const lessonHasContent = l =>
@@ -845,7 +881,21 @@ reader.onload = (ev) => {
               }
 
               return (
-                <div key={m.id} className={`cb-module-block ${isQuiz ? (isFinal ? "mod-final-quiz" : "mod-quiz") : ""}`}>
+           <div
+  key={m.id}
+  className={`cb-module-block ${isQuiz ? (isFinal ? "mod-final-quiz" : "mod-quiz") : ""} ${draggedModuleId === m.id ? "dragging" : ""} ${dragOverModuleId === m.id ? "drag-over" : ""}`}
+  draggable
+  onDragStart={() => setDraggedModuleId(m.id)}
+  onDragOver={(e) => { e.preventDefault(); setDragOverModuleId(m.id); }}
+  onDragLeave={() => setDragOverModuleId(null)}
+  onDrop={(e) => {
+    e.preventDefault();
+    if (draggedModuleId) reorderModules(draggedModuleId, m.id);
+    setDraggedModuleId(null);
+    setDragOverModuleId(null);
+  }}
+  onDragEnd={() => { setDraggedModuleId(null); setDragOverModuleId(null); }}
+>
                   <div className="cb-module-header">
                     <GripIcon />
                     <div className={`cb-module-num ${isQuiz ? (isFinal ? "quiz-final" : "quiz") : ""}`}>{idx + 1}</div>
@@ -873,9 +923,26 @@ reader.onload = (ev) => {
                     <QuizBuilder moduleId={m.id} questions={m.questions ?? []} onUpdate={qs => updateModuleQuestions(m.id, qs)} isFinal={isFinal} enums={enums} />
                   ) : (
                     <div className="cb-lessons-wrap">
-                      {m.lessons.map(l => (
-                        <div key={l.id} className="cb-lesson-row">
-                          <span className={`cb-lesson-icon lt-${l.contentType.toLowerCase()}`}><LessonTypeIcon type={l.contentType} /></span>
+                    {m.lessons.map(l => (
+  <div
+    key={l.id}
+    className={`cb-lesson-row ${draggedLesson?.lessonId === l.id ? "dragging" : ""} ${dragOverLesson?.lessonId === l.id ? "drag-over" : ""}`}
+    draggable
+    onDragStart={() => setDraggedLesson({ moduleId: m.id, lessonId: l.id })}
+    onDragOver={(e) => { e.preventDefault(); setDragOverLesson({ moduleId: m.id, lessonId: l.id }); }}
+    onDragLeave={() => setDragOverLesson(null)}
+    onDrop={(e) => {
+      e.preventDefault();
+      if (draggedLesson && draggedLesson.moduleId === m.id) {
+        reorderLessons(m.id, draggedLesson.lessonId, l.id);
+      }
+      setDraggedLesson(null);
+      setDragOverLesson(null);
+    }}
+    onDragEnd={() => { setDraggedLesson(null); setDragOverLesson(null); }}
+  >
+    <span className="cb-lesson-grip" title="Drag to reorder"><GripIcon /></span>
+    <span className={`cb-lesson-icon lt-${l.contentType.toLowerCase()}`}><LessonTypeIcon type={l.contentType} /></span>
                           <input className="cb-lesson-title-input" value={l.title} onChange={e => updateLesson(m.id, l.id, { title: e.target.value })} />
                           {lessonHasContent(l) && (
                             <span className="cb-lesson-uploaded-badge">
@@ -1351,6 +1418,17 @@ const styles = `
   .cb-btn-danger:hover { background: #6b1a1a; }
 
   .cb-toast { position: fixed; top: 1.5rem; right: 1.5rem; background: #1a2d12; border: 1px solid #639922; border-radius: 10px; padding: 0.75rem 1.2rem; color: #c0dd97; font-size: 0.875rem; font-weight: 500; z-index: 100; animation: cb-fadeIn 0.2s ease; }
+  .cb-grip-handle { display: inline-flex; cursor: grab; color: #475569; }
+.cb-grip-handle:active { cursor: grabbing; }
+
+.cb-lesson-grip { display: inline-flex; cursor: grab; color: #3a4460; flex-shrink: 0; }
+.cb-lesson-grip:active { cursor: grabbing; }
+
+.cb-module-block.dragging,
+.cb-lesson-row.dragging { opacity: 0.4; }
+
+.cb-module-block.drag-over { border-color: #639922 !important; box-shadow: 0 0 0 2px rgba(99,153,34,0.25); }
+.cb-lesson-row.drag-over  { border-color: #639922 !important; background: rgba(99,153,34,0.06); }
 
   @media (max-width: 640px) {
     .cb-page { padding: 1.25rem 1rem; }

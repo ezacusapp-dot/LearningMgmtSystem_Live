@@ -975,6 +975,7 @@ export default function AddModal({
                       type={showPw ? "text" : "password"}
                       value={formData.password}
                       onChange={(e) => setField("password", e.target.value)}
+                      maxLength={8}
                       placeholder="Min 6 characters"
                       style={{
                         width: "100%",
@@ -1037,6 +1038,7 @@ export default function AddModal({
                       value={formData.confirmPassword}
                       onChange={(e) => setField("confirmPassword", e.target.value)}
                       placeholder="Re-enter password"
+                       maxLength={8}
                       style={{
                         width: "100%",
                         padding: "0.65rem 2.6rem 0.65rem 0.9rem",
