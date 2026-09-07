@@ -16,7 +16,7 @@ const OPTION_LABELS = ["A", "B", "C", "D"];
 
 const DEFAULT_RULES = [
   { id: "r1", label: "Require Module Completion",  desc: "Students must complete all lessons before proceeding to the next module", enabled: true },
-  { id: "r2", label: "Require Test Pass (60%)",    desc: "Students must pass intermediate tests to continue to the next module", enabled: true },
+  { id: "r2", label: "Require Test Pass (50%)",    desc: "Students must pass intermediate tests to continue to the next module", enabled: true },
   { id: "r3", label: "Allow Course Retake",        desc: "Students can retake the entire course if they fail", enabled: true },
 ];
 
@@ -219,8 +219,8 @@ export default function CourseViewPage() {
   const stepConfig = [
     { num: 1, label: "Course Info"   },
     { num: 2, label: "Modules"       },
-    { num: 3, label: "Timeline"      },
-    { num: 4, label: "Tests & Rules" },
+    // { num: 3, label: "Timeline"      },
+    { num: 3, label: "Tests & Rules" },
   ];
 
   const STATUS_COLORS = {
@@ -613,7 +613,7 @@ export default function CourseViewPage() {
       )}
 
       {/* ══ STEP 4 — Tests & Rules ══ */}
-      {step === 4 && (
+      {step === 3 && (
         <div className="cb-card">
           <h2 className="cb-card-title">Intermediate Tests</h2>
 

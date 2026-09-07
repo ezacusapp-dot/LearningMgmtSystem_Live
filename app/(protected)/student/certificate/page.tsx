@@ -161,6 +161,36 @@ function CertificateCard({
 }
 
 // ─── Preview / live-render modal ────────────────────────────────────────────
+// function CertificatePreviewModal({
+//   cert,
+//   onClose,
+// }: {
+//   cert: UnifiedCertificate;
+//   onClose: () => void;
+// }) {
+//   return (
+//     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+//       <div className="relative w-full max-w-5xl">
+//         <button
+//           onClick={onClose}
+//           className="absolute -top-10 right-0 text-slate-300 hover:text-white flex items-center gap-1 text-sm"
+//         >
+//           <X className="w-4 h-4" /> Close
+//         </button>
+//         <Certificate
+//           studentName={cert.studentName}
+//           course={cert.title}
+//           dateConducted={new Date(cert.issueDate).toLocaleDateString()}
+//           grade={cert.grade}
+//           colorCode={cert.colorCode ?? "#3a1650"}
+//           showDownloadButton={true}
+//         />
+//       </div>
+//     </div>
+//   );
+// }
+
+// ─── Preview / live-render modal ────────────────────────────────────────────
 function CertificatePreviewModal({
   cert,
   onClose,
@@ -168,6 +198,8 @@ function CertificatePreviewModal({
   cert: UnifiedCertificate;
   onClose: () => void;
 }) {
+  const isExam = cert.kind === "exam";
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
       <div className="relative w-full max-w-5xl">
@@ -177,14 +209,30 @@ function CertificatePreviewModal({
         >
           <X className="w-4 h-4" /> Close
         </button>
-        <Certificate
-          studentName={cert.studentName}
-          course={cert.title}
-          dateConducted={new Date(cert.issueDate).toLocaleDateString()}
-          grade={cert.grade}
-          colorCode={cert.colorCode ?? "#3a1650"}
-          showDownloadButton={true}
-        />
+
+        {isExam ? (
+          // Exam / achievement certificates: render the live React component
+          <Certificate
+            studentName={cert.studentName}
+            course={cert.title}
+            dateConducted={new Date(cert.issueDate).toLocaleDateString()}
+            grade={cert.grade}
+            colorCode={cert.colorCode ?? "#3a1650"}
+            showDownloadButton={true}
+          />
+      ) : cert.downloadUrl ? (
+  <div className="bg-white rounded-xl overflow-hidden shadow-2xl w-full aspect-[1120/792]">
+    <iframe
+      src={`${cert.downloadUrl}?disposition=inline#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+      title={cert.title}
+      className="w-full h-full border-0"
+    />
+  </div>
+) : (
+          <div className="bg-[#161b27] rounded-xl p-10 text-center text-slate-400">
+            Certificate is still generating. Please try again shortly.
+          </div>
+        )}
       </div>
     </div>
   );

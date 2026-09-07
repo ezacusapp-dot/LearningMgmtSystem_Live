@@ -36,7 +36,7 @@ const CODE_LANGUAGES = [
 
 const DEFAULT_RULES = [
   { id: "r1", label: "Require Module Completion",  desc: "Students must complete all lessons before proceeding to the next module", enabled: true  },
-  { id: "r2", label: "Require Test Pass (60%)",    desc: "Students must pass intermediate tests to continue to the next module",    enabled: true  },
+  { id: "r2", label: "Require Test Pass (50%)",    desc: "Students must pass intermediate tests to continue to the next module",    enabled: true  },
   { id: "r3", label: "Allow Course Retake",        desc: "Students can retake the entire course if they fail",                      enabled: false },
 ];
 
@@ -135,225 +135,6 @@ function GradeMultiSelect({ grades, selected, onChange, error }) {
   );
 }
 
-// ─── Quiz Builder ─────────────────────────────────────────────────────────────
-
-// function QuizBuilder({ moduleId, questions, onUpdate, isFinal, enums }) {
-//   const accentColor = isFinal ? "#7c4fd4" : "#639922";
-//   const accentBg    = isFinal ? "#3d2a6e" : "#3b6d11";
-//   const accentBdr   = isFinal ? "#7c4fd4" : "#639922";
-//   const accentTxt   = isFinal ? "#c4b5fd" : "#c0dd97";
-
-//   const [codeOpenIds, setCodeOpenIds] = useState([]);
-
-//   const toggleCodeSection = (qId) =>
-//     setCodeOpenIds(prev =>
-//       prev.includes(qId) ? prev.filter(id => id !== qId) : [...prev, qId]
-//     );
-
-//   const getDefaultDifficulty   = () => enums.difficulties[0]?.type  || "Easy";
-//   const getDefaultBloomLevel   = () => enums.bloomLevels[0]?.type   || "Remember";
-//   const getDefaultQuestionType = () => enums.questionTypes[0]?.type || "Conceptual";
-
-//   const addQuestion = () => {
-//     const newQ = {
-//       id: `q_${Date.now()}`,
-//       text: "",
-//       options: [
-//         { id: `opt_${Date.now()}_0`, text: "" },
-//         { id: `opt_${Date.now()}_1`, text: "" },
-//       ],
-//       correctOptionId: "",
-//       description: "",
-//       points: 1,
-//       difficulty:   getDefaultDifficulty(),
-//       bloomLevel:   getDefaultBloomLevel(),
-//       questionType: getDefaultQuestionType(),
-//       codeSnippet:  "",
-//       codeLanguage: "",
-//     };
-//     onUpdate([...questions, newQ]);
-//   };
-
-//   const removeQuestion = (qId) => {
-//     setCodeOpenIds(prev => prev.filter(id => id !== qId));
-//     onUpdate(questions.filter(q => q.id !== qId));
-//   };
-
-//   const updateQuestion = (qId, patch) =>
-//     onUpdate(questions.map(q => q.id === qId ? { ...q, ...patch } : q));
-
-//   const addOption = (qId) => {
-//     const q = questions.find(x => x.id === qId);
-//     if (!q || q.options.length >= 4) return;
-//     const newOpt = { id: `opt_${Date.now()}`, text: "" };
-//     updateQuestion(qId, { options: [...q.options, newOpt] });
-//   };
-
-//   const removeOption = (qId, optId) => {
-//     const q = questions.find(x => x.id === qId);
-//     if (!q || q.options.length <= 2) return;
-//     const updated   = q.options.filter(o => o.id !== optId);
-//     const correctId = q.correctOptionId === optId ? "" : q.correctOptionId;
-//     updateQuestion(qId, { options: updated, correctOptionId: correctId });
-//   };
-
-//   const updateOptionText = (qId, optId, text) => {
-//     const q = questions.find(x => x.id === qId);
-//     if (!q) return;
-//     updateQuestion(qId, {
-//       options: q.options.map(o => o.id === optId ? { ...o, text } : o),
-//     });
-//   };
-
-//   const getCorrectLetter = (q) => {
-//     if (!q.correctOptionId) return "—";
-//     const idx = q.options.findIndex(opt => opt.id === q.correctOptionId);
-//     return idx !== -1 ? OPTION_LABELS[idx] : "—";
-//   };
-
-//   return (
-//     <div className="qb-wrap">
-//       <div className="qb-banner" style={{ borderColor: accentBdr, background: isFinal ? "rgba(124,79,212,0.07)" : "rgba(99,153,34,0.07)" }}>
-//         <span className="qb-banner-icon" style={{ background: accentBg, borderColor: accentBdr, color: accentTxt }}>
-//           {isFinal ? <FinalQuizIcon /> : <QuizBannerIcon />}
-//         </span>
-//         <div>
-//           <p className="qb-banner-title" style={{ color: accentTxt }}>{isFinal ? "Final Quiz" : "Quiz"} — Question Builder</p>
-//           <p className="qb-banner-sub">Add questions, options, metadata and optional code snippets</p>
-//         </div>
-//         <span className="qb-question-count" style={{ background: accentBg, borderColor: accentBdr, color: accentTxt }}>
-//           {questions.length} Q
-//         </span>
-//       </div>
-
-//       {questions.length === 0 ? (
-//         <div className="qb-empty">
-//           <QuizEmptyIcon />
-//           <p>No questions yet — add your first question below</p>
-//         </div>
-//       ) : (
-//         questions.map((q, qi) => {
-//           const codeOpen = codeOpenIds.includes(q.id);
-//           const hasCode  = !!q.codeSnippet?.trim();
-
-//           return (
-//             <div key={q.id} className="qb-question-card" style={{ borderLeftColor: accentColor }}>
-//               <div className="qb-q-header">
-//                 <span className="qb-q-num" style={{ background: accentBg, borderColor: accentBdr, color: accentTxt }}>Q{qi + 1}</span>
-//                 <span className="qb-q-label">Question</span>
-//                 <div className="qb-q-header-right">
-//                   <div className="qb-pts-field">
-//                     <span className="qb-pts-label">Marks</span>
-//                     <input
-//                       type="number"
-//                       className="qb-pts-input"
-//                       min={1} max={100}
-//                       value={q.points}
-//                       onChange={e => updateQuestion(q.id, { points: parseInt(e.target.value) || 1 })}
-//                     />
-//                   </div>
-//                   <button className="cb-icon-btn delete" onClick={() => removeQuestion(q.id)} title="Delete question">
-//                     <DeleteIcon />
-//                   </button>
-//                 </div>
-//               </div>
-
-//               <div className="qb-meta-grid">
-//                 <div className="qb-meta-field">
-//                   <label className="qb-meta-label">Difficulty</label>
-//                   <select className="qb-meta-select" value={q.difficulty} onChange={e => updateQuestion(q.id, { difficulty: e.target.value })}>
-//                     {enums.difficulties.length > 0
-//                       ? enums.difficulties.map(opt => <option key={opt.type} value={opt.type}>{opt.label}</option>)
-//                       : <><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></>}
-//                   </select>
-//                 </div>
-//                 <div className="qb-meta-field">
-//                   <label className="qb-meta-label">Bloom's Level</label>
-//                   <select className="qb-meta-select" value={q.bloomLevel} onChange={e => updateQuestion(q.id, { bloomLevel: e.target.value })}>
-//                     {enums.bloomLevels.length > 0
-//                       ? enums.bloomLevels.map(opt => <option key={opt.type} value={opt.type}>{opt.label}</option>)
-//                       : <><option value="Remember">Remember</option><option value="Understand">Understand</option><option value="Apply">Apply</option><option value="Analyze">Analyze</option><option value="Evaluate">Evaluate</option><option value="Create">Create</option></>}
-//                   </select>
-//                 </div>
-//                 <div className="qb-meta-field">
-//                   <label className="qb-meta-label">Type</label>
-//                   <select className="qb-meta-select" value={q.questionType} onChange={e => updateQuestion(q.id, { questionType: e.target.value })}>
-//                     {enums.questionTypes.length > 0
-//                       ? enums.questionTypes.map(opt => <option key={opt.type} value={opt.type}>{opt.label}</option>)
-//                       : <><option value="Conceptual">Conceptual</option><option value="OutputPrediction">Output Prediction</option><option value="ProblemSolving">Problem Solving</option><option value="Debugging">Debugging</option></>}
-//                   </select>
-//                 </div>
-//                 <div className="qb-meta-field qb-correct-preview">
-//                   <label className="qb-meta-label">Correct Answer</label>
-//                   <div className="qb-correct-badge-preview" style={{ borderColor: accentBdr, color: accentTxt }}>{getCorrectLetter(q)}</div>
-//                 </div>
-//               </div>
-
-//               <textarea className="qb-q-text" placeholder="Type your question here…" rows={2} value={q.text} onChange={e => updateQuestion(q.id, { text: e.target.value })} />
-
-//               <div className="qb-code-toggle-wrap">
-//                 {!codeOpen ? (
-//                   <button className="qb-code-add-chip" onClick={() => toggleCodeSection(q.id)}>
-//                     <CodeIcon /> Add Code Snippet <span className="qb-code-chip-hint">optional</span>
-//                   </button>
-//                 ) : (
-//                   <div className="qb-code-section">
-//                     <div className="qb-code-header">
-//                       <span className="qb-code-label"><CodeIcon /> Code Snippet <span className="qb-desc-optional"> — shown above the question</span></span>
-//                       <div className="qb-code-header-right">
-//                         <select className="qb-meta-select qb-lang-select" value={q.codeLanguage || "python"} onChange={e => updateQuestion(q.id, { codeLanguage: e.target.value })}>
-//                           {CODE_LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
-//                         </select>
-//                         <button className="qb-option-remove" title="Remove code snippet" onClick={() => { updateQuestion(q.id, { codeSnippet: "", codeLanguage: "" }); toggleCodeSection(q.id); }}>
-//                           <XSmallIcon />
-//                         </button>
-//                       </div>
-//                     </div>
-//                     <textarea className="qb-code-textarea" placeholder={`// Paste your ${CODE_LANGUAGES.find(l => l.value === (q.codeLanguage || "python"))?.label || "code"} snippet here…`} rows={5} value={q.codeSnippet} onChange={e => updateQuestion(q.id, { codeSnippet: e.target.value })} spellCheck={false} />
-//                     {q.codeLanguage && <div className="qb-code-lang-badge">{CODE_LANGUAGES.find(l => l.value === q.codeLanguage)?.label || q.codeLanguage}</div>}
-//                   </div>
-//                 )}
-//                 {!codeOpen && hasCode && (
-//                   <span className="qb-code-saved-badge" onClick={() => toggleCodeSection(q.id)} title="Code snippet saved — click to edit">
-//                     <CodeIcon /> {CODE_LANGUAGES.find(l => l.value === q.codeLanguage)?.label || "Code"} snippet saved <span className="qb-code-edit-hint">Edit</span>
-//                   </span>
-//                 )}
-//               </div>
-
-//               <div className="qb-options-section">
-//                 <p className="qb-options-label">Answer Options <span className="qb-options-hint">(select the correct answer)</span></p>
-//                 {q.options.map((opt, oi) => {
-//                   const isCorrect = q.correctOptionId === opt.id;
-//                   return (
-//                     <div key={opt.id} className={`qb-option-row ${isCorrect ? "correct" : ""}`} style={isCorrect ? { borderColor: accentColor, background: isFinal ? "rgba(124,79,212,0.09)" : "rgba(99,153,34,0.09)" } : {}}>
-//                       <button className={`qb-option-radio ${isCorrect ? "checked" : ""}`} style={isCorrect ? { background: accentBg, borderColor: accentColor } : {}} onClick={() => updateQuestion(q.id, { correctOptionId: opt.id })} title="Mark as correct answer">
-//                         {isCorrect && <span className="qb-option-radio-dot" style={{ background: accentTxt }} />}
-//                       </button>
-//                       <span className="qb-option-letter" style={isCorrect ? { background: accentBg, borderColor: accentBdr, color: accentTxt } : {}}>{OPTION_LABELS[oi]}</span>
-//                       <input className="qb-option-input" placeholder={`Option ${OPTION_LABELS[oi]}…`} value={opt.text} onChange={e => updateOptionText(q.id, opt.id, e.target.value)} />
-//                       {isCorrect && <span className="qb-correct-badge" style={{ background: isFinal ? "rgba(124,79,212,0.15)" : "rgba(99,153,34,0.15)", borderColor: accentBdr, color: accentTxt }}><CheckSmallIcon /> Correct</span>}
-//                       {q.options.length > 2 && <button className="qb-option-remove" onClick={() => removeOption(q.id, opt.id)} title="Remove option"><XSmallIcon /></button>}
-//                     </div>
-//                   );
-//                 })}
-//                 {q.options.length < 4 && <button className="qb-add-option-chip" onClick={() => addOption(q.id)}><PlusSmallIcon /> Add Option {OPTION_LABELS[q.options.length]}</button>}
-//               </div>
-
-//               <div className="qb-desc-section">
-//                 <label className="qb-desc-label"><ExplainIcon /> Explanation <span className="qb-desc-optional">(optional — shown after answer)</span></label>
-//                 <textarea className="qb-desc-textarea" placeholder="Explain why the correct answer is right…" rows={2} value={q.description} onChange={e => updateQuestion(q.id, { description: e.target.value })} />
-//               </div>
-//             </div>
-//           );
-//         })
-//       )}
-
-//       <button className="qb-add-question-btn" style={{ borderColor: accentBdr, color: accentTxt }} onClick={addQuestion}>
-//         <PlusIcon /> Add Question {questions.length > 0 && <span className="qb-add-q-hint">Q{questions.length + 1}</span>}
-//       </button>
-//     </div>
-//   );
-// }
 
 // ─── Collapsed Module Row ─────────────────────────────────────────────────────
 
@@ -468,7 +249,11 @@ const validateStep1 = () => {
   const [uploadFile,     setUploadFile]     = useState(null);
   const [videoLinkDraft, setVideoLinkDraft] = useState(["", "", ""]);
   const fileInputRef = useRef(null);
+const [draggedModuleId, setDraggedModuleId] = useState(null);
+const [dragOverModuleId, setDragOverModuleId] = useState(null);
 
+const [draggedLesson, setDraggedLesson] = useState(null); // { moduleId, lessonId }
+const [dragOverLesson, setDragOverLesson] = useState(null); // { moduleId, lessonId }
   const [enums, setEnums] = useState({ difficulties: [], bloomLevels: [], questionTypes: [] });
 
   useEffect(() => {
@@ -525,6 +310,36 @@ reader.onload = (ev) => {
     setThumbnailPreview("");
     if (thumbnailInputRef.current) thumbnailInputRef.current.value = "";
   };
+
+
+  // ── Reorder modules ──
+const reorderModules = (fromId, toId) => {
+  if (fromId === toId) return;
+  setModules(prev => {
+    const arr = [...prev];
+    const fromIdx = arr.findIndex(m => m.id === fromId);
+    const toIdx   = arr.findIndex(m => m.id === toId);
+    if (fromIdx === -1 || toIdx === -1) return prev;
+    const [moved] = arr.splice(fromIdx, 1);
+    arr.splice(toIdx, 0, moved);
+    return arr.map((m, i) => ({ ...m, order: i + 1 }));
+  });
+};
+
+// ── Reorder lessons within a module ──
+const reorderLessons = (moduleId, fromId, toId) => {
+  if (fromId === toId) return;
+  setModules(prev => prev.map(m => {
+    if (m.id !== moduleId) return m;
+    const lessons = [...m.lessons];
+    const fromIdx = lessons.findIndex(l => l.id === fromId);
+    const toIdx   = lessons.findIndex(l => l.id === toId);
+    if (fromIdx === -1 || toIdx === -1) return m;
+    const [moved] = lessons.splice(fromIdx, 1);
+    lessons.splice(toIdx, 0, moved);
+    return { ...m, lessons: lessons.map((l, i) => ({ ...l, order: i + 1 })) };
+  }));
+};
 
   // ── Module helpers ─────────────────────────────────────────────────────────
   const addModule = () =>
@@ -784,8 +599,8 @@ reader.onload = (ev) => {
   const stepConfig = [
     { num: 1, label: "Course Info"   },
     { num: 2, label: "Modules"       },
-    { num: 3, label: "Timeline"      },
-    { num: 4, label: "Tests & Rules" },
+    // { num: 3, label: "Timeline"      },
+    { num: 3, label: "Tests & Rules" },
   ];
 
   const lessonHasContent = (l) =>
@@ -1023,7 +838,23 @@ reader.onload = (ev) => {
               }
 
               return (
-                <div key={m.id} className={`cb-module-block ${isQuiz ? (isFinal ? "mod-final-quiz" : "mod-quiz") : ""}`}>
+                // <div key={m.id} className={`cb-module-block ${isQuiz ? (isFinal ? "mod-final-quiz" : "mod-quiz") : ""}`}>
+                  <div
+    key={m.id}
+    className={`cb-module-block ${isQuiz ? (isFinal ? "mod-final-quiz" : "mod-quiz") : ""} ${draggedModuleId === m.id ? "dragging" : ""} ${dragOverModuleId === m.id ? "drag-over" : ""}`}
+    draggable
+    onDragStart={() => setDraggedModuleId(m.id)}
+    onDragOver={(e) => { e.preventDefault(); setDragOverModuleId(m.id); }}
+    onDragLeave={() => setDragOverModuleId(null)}
+    onDrop={(e) => {
+      e.preventDefault();
+      if (draggedModuleId) reorderModules(draggedModuleId, m.id);
+      setDraggedModuleId(null);
+      setDragOverModuleId(null);
+    }}
+    onDragEnd={() => { setDraggedModuleId(null); setDragOverModuleId(null); }}
+  >
+                  
                   <div className="cb-module-header">
                     <GripIcon />
                     <div className={`cb-module-num ${isQuiz ? (isFinal ? "quiz-final" : "quiz") : ""}`}>{idx + 1}</div>
@@ -1051,9 +882,26 @@ reader.onload = (ev) => {
                     <QuizBuilder moduleId={m.id} questions={m.questions ?? []} onUpdate={(qs) => updateModuleQuestions(m.id, qs)} isFinal={isFinal} enums={enums} />
                   ) : (
                     <div className="cb-lessons-wrap">
-                      {m.lessons.map(l => (
-                        <div key={l.id} className="cb-lesson-row">
-                          <span className={`cb-lesson-icon lt-${l.contentType.toLowerCase()}`}><LessonTypeIcon type={l.contentType} /></span>
+                    {m.lessons.map(l => (
+  <div
+    key={l.id}
+    className={`cb-lesson-row ${draggedLesson?.lessonId === l.id ? "dragging" : ""} ${dragOverLesson?.lessonId === l.id ? "drag-over" : ""}`}
+    draggable
+    onDragStart={() => setDraggedLesson({ moduleId: m.id, lessonId: l.id })}
+    onDragOver={(e) => { e.preventDefault(); setDragOverLesson({ moduleId: m.id, lessonId: l.id }); }}
+    onDragLeave={() => setDragOverLesson(null)}
+    onDrop={(e) => {
+      e.preventDefault();
+      if (draggedLesson && draggedLesson.moduleId === m.id) {
+        reorderLessons(m.id, draggedLesson.lessonId, l.id);
+      }
+      setDraggedLesson(null);
+      setDragOverLesson(null);
+    }}
+    onDragEnd={() => { setDraggedLesson(null); setDragOverLesson(null); }}
+  >
+    <span className="cb-lesson-grip" title="Drag to reorder"><GripIcon /></span>
+    <span className={`cb-lesson-icon lt-${l.contentType.toLowerCase()}`}><LessonTypeIcon type={l.contentType} /></span>
                           <input className="cb-lesson-title-input" value={l.title} onChange={e => updateLesson(m.id, l.id, { title: e.target.value })} />
                           {lessonHasContent(l) && (
                             <span className="cb-lesson-uploaded-badge">
@@ -1102,7 +950,7 @@ reader.onload = (ev) => {
       )}
 
       {/* ══ STEP 3 — Timeline ══ */}
-      {step === 3 && (
+      {/* {step === 3 && (
         <div className="cb-card">
           <h2 className="cb-card-title">Timeline & Schedule</h2>
           <div className="cb-info-box">
@@ -1166,7 +1014,7 @@ reader.onload = (ev) => {
             <button className="cb-btn cb-btn-green" onClick={() => goStep(4)}>Next: Tests & Rules →</button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* ══ STEP 4 — Tests & Rules ══ */}
       {step === 4 && (
@@ -1693,6 +1541,18 @@ const styles = `
   .cb-btn-danger:hover { background: #6b1a1a; }
 
   .cb-toast { position: fixed; top: 1.5rem; right: 1.5rem; background: #1a2d12; border: 1px solid #639922; border-radius: 10px; padding: 0.75rem 1.2rem; color: #c0dd97; font-size: 0.875rem; font-weight: 500; z-index: 100; animation: cb-fadeIn 0.2s ease; }
+
+  .cb-grip-handle { display: inline-flex; cursor: grab; color: #475569; }
+.cb-grip-handle:active { cursor: grabbing; }
+
+.cb-lesson-grip { display: inline-flex; cursor: grab; color: #3a4460; flex-shrink: 0; }
+.cb-lesson-grip:active { cursor: grabbing; }
+
+.cb-module-block.dragging,
+.cb-lesson-row.dragging { opacity: 0.4; }
+
+.cb-module-block.drag-over { border-color: #639922 !important; box-shadow: 0 0 0 2px rgba(99,153,34,0.25); }
+.cb-lesson-row.drag-over  { border-color: #639922 !important; background: rgba(99,153,34,0.06); }
 
   @media (max-width: 640px) {
     .cb-page { padding: 1.25rem 1rem; }

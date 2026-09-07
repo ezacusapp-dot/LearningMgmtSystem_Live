@@ -70,7 +70,7 @@ const mainNav: NavItem[] = [
     label: "Master Data",
     icon: <Database size={15} strokeWidth={1.8} />,
     children: [
-      { label: "Award Category",  href: "/admin/dashboard/master/award-category" },
+      // { label: "Award Category",  href: "/admin/dashboard/master/award-category" },
          { label: "Duration Type",   href: "/admin/dashboard/master/duration" },
            { label: "Levels",           href: "/admin/dashboard/master/levels" },
   { label: "Course Category", href: "/admin/dashboard/master/course-categories" },
@@ -81,35 +81,35 @@ const mainNav: NavItem[] = [
 
     ],
   },
-  {
-    label: "Learning Paths",
-    icon: <BarChart2 size={15} strokeWidth={1.8} />,
-    href: "/dashboard/learning_paths",
-  },
-  {
-    label: "Certification",
-    icon: <Award size={15} strokeWidth={1.8} />,
-    href: "/dashboard/certification",
-    badge: 7,
-  },
-  {
-    label: "Timeline Scheduler",
-    icon: <Calendar size={15} strokeWidth={1.8} />,
-    href: "/dashboard/timeline_Schedular",
-    badge: 7,
-  },
-  {
-    label: "Documentation",
-    icon: <FileText size={15} strokeWidth={1.8} />,
-    href: "/dashboard/documentation",
-    badge: 7,
-  },
-  {
-    label: "Analytics",
-    icon: <Zap size={15} strokeWidth={1.8} />,
-    href: "/dashboard/analytics",
-    badge: 7,
-  },
+  // {
+  //   label: "Learning Paths",
+  //   icon: <BarChart2 size={15} strokeWidth={1.8} />,
+  //   href: "/dashboard/learning_paths",
+  // },
+  // {
+  //   label: "Certification",
+  //   icon: <Award size={15} strokeWidth={1.8} />,
+  //   href: "/dashboard/certification",
+  //   badge: 7,
+  // },
+  // {
+  //   label: "Timeline Scheduler",
+  //   icon: <Calendar size={15} strokeWidth={1.8} />,
+  //   href: "/dashboard/timeline_Schedular",
+  //   badge: 7,
+  // },
+  // {
+  //   label: "Documentation",
+  //   icon: <FileText size={15} strokeWidth={1.8} />,
+  //   href: "/dashboard/documentation",
+  //   badge: 7,
+  // },
+  // {
+  //   label: "Analytics",
+  //   icon: <Zap size={15} strokeWidth={1.8} />,
+  //   href: "/dashboard/analytics",
+  //   badge: 7,
+  // },
 ];
 
 // ─── Props ───────────────────────────────────────────────
@@ -134,13 +134,13 @@ export default function Sidebar({ collapsed, activeLabel, onNavChange }: Sidebar
     );
   };
 
-  const settingsNav: NavItem[] = [
-    {
-      label: "Settings",
-      icon: <Settings size={15} strokeWidth={1.8} />,
-      href: "/dashboard/settings",
-    },
-  ];
+  // const settingsNav: NavItem[] = [
+  //   {
+  //     label: "Settings",
+  //     icon: <Settings size={15} strokeWidth={1.8} />,
+  //     href: "/dashboard/settings",
+  //   },
+  // ];
 
   const handleNav = (item: NavItem) => {
     if (item.action) {
@@ -221,7 +221,7 @@ export default function Sidebar({ collapsed, activeLabel, onNavChange }: Sidebar
           )}
         </nav>
 
-        <SectionLabel collapsed={collapsed} label="Settings" />
+        {/* <SectionLabel collapsed={collapsed} label="Settings" />
         <nav className="flex flex-col gap-0.5">
           {settingsNav.map((item) => (
             <NavLink
@@ -232,7 +232,7 @@ export default function Sidebar({ collapsed, activeLabel, onNavChange }: Sidebar
               onClick={() => handleNav(item)}
             />
           ))}
-        </nav>
+        </nav> */}
       </div>
 
       {/* ── User Footer ── */}

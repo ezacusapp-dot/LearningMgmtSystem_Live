@@ -44,8 +44,48 @@ const AVATAR_PALETTE = [
   { bg: "#2e1065", fg: "#c4b5fd" },
 ];
 
-const REGIONS  = ["All Regions", "North", "South", "East", "West"];
-const STATES   = ["All States",  "California", "Washington", "Texas", "New York"];
+const REGIONS = [
+  "All Regions",
+  "North",
+  "South",
+  "East",
+  "West",
+  "Central",
+  "Northeast",
+];
+
+const STATES = [
+  "All States",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
 const STATUSES = ["All Status",  "Active", "Inactive"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,7 +104,7 @@ function getPasswordStrength(pw: string): { level: number; label: string; color:
   if (!pw) return { level: 0, label: "", color: "#2d3448" };
   let score = 0;
   if (pw.length >= 6)          score++;
-  if (pw.length >= 10)         score++;
+  if (pw.length >= 6)         score++;
   if (/[A-Z]/.test(pw))        score++;
   if (/[0-9]/.test(pw))        score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
@@ -82,8 +122,8 @@ const defaultForm = {
   adminEmail: "",
   phone: "",
   address: "",
-  region: "North",
-  state: "California",
+  region: "",
+  state: "",
   students: 0,
   active: true,
   subscription: "trial" as "active" | "trial" | "expired",
@@ -173,8 +213,8 @@ export default function SchoolsPage() {
       adminEmail:      school.adminEmail   ?? "",
       phone:           school.phone        ?? "",
       address:         school.address      ?? "",
-      region:          school.region       ?? "North",
-      state:           school.state        ?? "California",
+      region:          school.region       ?? "",
+      state:           school.state        ?? "",
       students:        school.students     ?? 0,
       active:          school.active       ?? true,
       subscription:    school.subscription ?? "trial",
@@ -591,7 +631,15 @@ function SchoolFormModal({ isOpen, onClose, onSave, mode, formData, setFormData 
                   <label className="sf-label"><MapPin size={13} />Region <span className="sf-req">*</span></label>
                   <div className="sf-select-wrap">
                     <select value={formData.region} onChange={(e) => setFormData({ ...formData, region: e.target.value })} className="sf-select">
-                      {["North","South","East","West","Central"].map((r) => <option key={r}>{r}</option>)}
+                      { [
+  "All Regions",
+  "North",
+  "South",
+  "East",
+  "West",
+  "Central",
+  "Northeast",
+].map((r) => <option key={r}>{r}</option>)}
                     </select>
                     <span className="sf-select-arrow">▾</span>
                   </div>
@@ -600,7 +648,37 @@ function SchoolFormModal({ isOpen, onClose, onSave, mode, formData, setFormData 
                   <label className="sf-label"><MapPin size={13} />State <span className="sf-req">*</span></label>
                   <div className="sf-select-wrap">
                     <select value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} className="sf-select">
-                      {["California","Washington","New York","Texas","Florida","Illinois"].map((s) => <option key={s}>{s}</option>)}
+                      {[
+  "All States",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+].map((s) => <option key={s}>{s}</option>)}
                     </select>
                     <span className="sf-select-arrow">▾</span>
                   </div>
@@ -679,6 +757,7 @@ function SchoolFormModal({ isOpen, onClose, onSave, mode, formData, setFormData 
                       onChange={(e) => { setFormData({ ...formData, password: e.target.value }); clearErr("password"); }}
                       placeholder={mode === "add" ? "Min. 6 characters" : "Leave blank to keep current"}
                       className={`sf-input sf-pw-input ${errors.password ? "error" : ""}`}
+                      maxLength={8}
                     />
                     <button type="button" className="sf-pw-eye" onClick={() => setShowPassword((v) => !v)} tabIndex={-1}>
                       {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -712,6 +791,7 @@ function SchoolFormModal({ isOpen, onClose, onSave, mode, formData, setFormData 
                       onChange={(e) => { setFormData({ ...formData, confirmPassword: e.target.value }); clearErr("confirmPassword"); }}
                       placeholder="Re-enter password"
                       className={`sf-input sf-pw-input ${errors.confirmPassword ? "error" : ""}`}
+                      maxLength={8}
                     />
                     <button type="button" className="sf-pw-eye" onClick={() => setShowConfirm((v) => !v)} tabIndex={-1}>
                       {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}

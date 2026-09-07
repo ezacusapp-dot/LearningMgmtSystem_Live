@@ -714,10 +714,21 @@ export default function ExamAttemptPage() {
   const answeredCount = Object.keys(answers).length;
   const lowTime = secondsLeft <= 5 * 60;
 
-  function selectOption(questionId: string, optionId: string) {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
-  }
+  // function selectOption(questionId: string, optionId: string) {
+  //   setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+  // }
 
+  function selectOption(questionId: string, optionId: string) {
+  setAnswers((prev) => {
+    // Clicking the already-selected option again clears it
+    if (prev[questionId] === optionId) {
+      const next = { ...prev };
+      delete next[questionId];
+      return next;
+    }
+    return { ...prev, [questionId]: optionId };
+  });
+}
   function toggleMark(questionId: string) {
     setMarked((prev) => {
       const next = new Set(prev);

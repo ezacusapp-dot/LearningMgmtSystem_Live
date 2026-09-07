@@ -88,11 +88,32 @@ const generateUsername = (firstName: string, lastName: string): string => {
 
 const generatePassword = (firstName: string, lastName: string): string => {
   if (!firstName && !lastName) return "";
-  const base = (firstName.charAt(0).toUpperCase() + lastName.toLowerCase()).replace(/\s+/g, "");
+
   const symbols = ["@", "#", "$", "!"];
   const sym = symbols[Math.floor(Math.random() * symbols.length)];
-  const num = Math.floor(100 + Math.random() * 900);
-  return `${base}${sym}${num}`;
+  const fillerLetters = "abcdefghijklmnopqrstuvwxyz";
+
+  // Only letters — strip anything else (spaces, numbers already in the name, etc.)
+  let namePart = (firstName.charAt(0).toUpperCase() + lastName.toLowerCase()).replace(/[^A-Za-z]/g, "");
+
+  // If the name-derived part is too short, pad with random letters (not digits)
+  // so the password stays letter-heavy instead of number-heavy
+  while (namePart.length < 5) {
+    namePart += fillerLetters[Math.floor(Math.random() * fillerLetters.length)];
+  }
+
+  // Just 2 digits instead of 3 — keeps digits a minority of the password
+  const num = Math.floor(10 + Math.random() * 90);
+
+  let password = `${namePart}${sym}${num}`;
+
+  // Final safety net: if still under 8 chars for any reason, pad with letters, not digits
+  while (password.length < 8) {
+    namePart += fillerLetters[Math.floor(Math.random() * fillerLetters.length)];
+    password = `${namePart}${sym}${num}`;
+  }
+
+  return password;
 };
 
 const getEmptyForm = (): FormState => ({
@@ -428,7 +449,7 @@ export default function Student() {
   const getPasswordStrength = (pwd: string): { label: string; color: string; width: string } => {
     if (!pwd) return { label: "", color: "", width: "0%" };
     let score = 0;
-    if (pwd.length >= 8) score++;
+    if (pwd.length >= 5) score++;
     if (/[A-Z]/.test(pwd)) score++;
     if (/[a-z]/.test(pwd)) score++;
     if (/\d/.test(pwd)) score++;
@@ -784,6 +805,7 @@ export default function Student() {
                         value={form.password}
                         onChange={handleChange}
                         disabled={viewMode}
+                         maxLength={8}
                         className="w-full bg-[#1e2435] rounded-xl px-4 py-2.5 pr-10 text-sm text-white outline-none transition placeholder-white/20 disabled:opacity-50 font-mono"
                       />
                       <button
