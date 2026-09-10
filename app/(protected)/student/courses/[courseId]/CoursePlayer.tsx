@@ -2616,6 +2616,29 @@ function VideoPlayer({
       );
     }
 
+ // Matches either:
+//  - https://play.gumlet.io/embed/{id}
+//  - https://gumlet.tv/watch/{id}/  (or without trailing slash)
+const gumletMatch = url.match(
+  /(?:play\.gumlet\.io\/embed\/|gumlet\.tv\/watch\/)([a-zA-Z0-9]+)/
+);
+
+if (gumletMatch) {
+  const videoId = gumletMatch[1];
+  return (
+    <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+      <iframe
+        src={`https://play.gumlet.io/embed/${videoId}?autoplay=1`}
+        className="absolute inset-0 w-full h-full"
+        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write"
+        allowFullScreen
+        frameBorder="0"
+        referrerPolicy="origin"
+      />
+    </div>
+  );
+}
+
     if (url.match(/\.(mp4|webm|ogg)$/i)) {
       return (
         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
