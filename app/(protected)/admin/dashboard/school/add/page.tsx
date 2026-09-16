@@ -173,6 +173,7 @@ export default function SchoolFormModal({
                     })
                   }
                   placeholder="+91 9999999999"
+                  maxLength={10}
                   className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-lime-500"
                 />
               </div>

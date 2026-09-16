@@ -188,7 +188,7 @@ export default function ExamsListPage() {
                       <td className="px-6 py-4"><StatusBadge status={exam.status} /></td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => handleViewResults(exam.id)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 border border-white/10 transition-all">Results</button>
+                          {/* <button onClick={() => handleViewResults(exam.id)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 border border-white/10 transition-all">Results</button> */}
                           <button onClick={() => handleEdit(exam.id)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 border border-white/10 transition-all">Edit</button>
                           <button onClick={() => handleDelete(exam.id)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-all">Delete</button>
                         </div>

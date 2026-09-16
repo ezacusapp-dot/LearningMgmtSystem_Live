@@ -120,15 +120,35 @@ export const examsApi = {
     return response.json();
   },
 
-  update: async (id: string, data: Partial<CreateExamData>) => {
-    const response = await fetch(`${API_BASE}/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    return response.json();
-  },
+  // update: async (id: string, data: Partial<CreateExamData>) => {
+  //   const response = await fetch(`${API_BASE}/${id}`, {
+  //     method: "PATCH",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify(data),
+  //   });
+  //   return response.json();
+  // },
 
+  update: async (id: string, data: Partial<Record<string, any>>) => {
+  const response = await fetch(`/api/exams/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  const text = await response.text();
+  if (!text) {
+    console.error("Update exam: server returned an empty response", response.status);
+    return { status: false, message: `Server returned an empty response (HTTP ${response.status})` };
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error("Update exam: failed to parse response as JSON:", text);
+    return { status: false, message: "Server returned an invalid response" };
+  }
+},
   delete: async (id: string) => {
     const response = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
     return response.json();

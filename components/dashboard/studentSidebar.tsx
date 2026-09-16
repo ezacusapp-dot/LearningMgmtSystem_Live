@@ -64,7 +64,7 @@ export default function StudentSidebar({ collapsed }: SidebarProps) {
 
   /* ---------- Logout ---------- */
   const handleLogout = () => {
-    router.push("/login");
+    router.push("/Home");
   };
 
   /* ---------- Nav Link ---------- */

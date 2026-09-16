@@ -1,3 +1,5 @@
+
+
 // app/(protected)/student/certificates/page.tsx
 "use client";
 
@@ -12,6 +14,21 @@ import {
 } from "lucide-react";
 import Certificate from "lib/achiement_certificate"; // the colorCode-aware version
 import type { UnifiedCertificate } from "@/types/certificate";
+
+// ─── Course-certificate download endpoint ──────────────────────────────────
+// ASSUMPTION: this matches the GET route shown earlier
+// (modules/certificate-issuance -> getCertificateForDownload). If your
+// actual folder is named differently (e.g. app/api/certificates/[id]/download
+// instead of app/api/students/certificate/[id]/download), change this one
+// constant and both preview + download start working again.
+//
+// This endpoint is what actually triggers ensureCertificatePdf() server-side
+// — it's the ONLY thing that generates the PDF. A certificate's pdfUrl stays
+// null in the DB until this route is hit once, so the UI must never gate on
+// "do we already have a pdfUrl" before calling it — that was the bug.
+function courseCertDownloadUrl(id: string, disposition: "inline" | "attachment" = "attachment") {
+  return `/api/students/certificate/${id}/download?disposition=${disposition}`;
+}
 
 // ─── Ribbon icon ────────────────────────────────────────────────────────────
 function RibbonIcon() {
@@ -37,24 +54,14 @@ function CertificateCard({
   cert: UnifiedCertificate;
   onPreview: (c: UnifiedCertificate) => void;
 }) {
-  const [downloading, setDownloading] = useState(false);
   const isExam = cert.kind === "exam";
 
-  const handleDownload = async () => {
-    setDownloading(true);
-    try {
-      if (cert.downloadUrl) {
-        // Already-rendered course certificate — just open it.
-        window.open(cert.downloadUrl, "_blank");
-      } else {
-        // Exam certificates (and course certs on first download) are
-        // generated on demand — reuse the preview modal's download button,
-        // which drives the actual Certificate component's PDF flow.
-        onPreview(cert);
-      }
-    } finally {
-      setDownloading(false);
-    }
+  // Both cert kinds now behave the same way: Download opens the preview
+  // modal first (same as the eye icon), and the actual download happens
+  // from the "Download PDF" button inside that modal. Nothing downloads
+  // directly from the card anymore.
+  const handleDownload = () => {
+    onPreview(cert);
   };
 
   // Course certs keep the static green theme; exam certs use the band's
@@ -131,64 +138,28 @@ function CertificateCard({
         <div className="flex items-center gap-2">
           <button
             onClick={handleDownload}
-            disabled={downloading}
             style={isExam ? { backgroundColor: cert.colorCode, borderColor: cert.colorCode } : undefined}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 active:scale-95 disabled:opacity-50 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 active:scale-95 ${
               isExam
                 ? "text-white hover:opacity-90 border"
                 : "bg-[#3b6d11] hover:bg-[#27500a] border border-[#639922] text-[#c0dd97]"
             }`}
           >
-            {downloading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Download className="w-3.5 h-3.5" />
-            )}
+            <Download className="w-3.5 h-3.5" />
             Download
           </button>
-          <button
+          {/* <button
             className="p-2.5 rounded-xl bg-[#1e2230] border border-[#2d3448] text-slate-400 hover:text-[#c0dd97] transition-colors"
-            style={isExam ? undefined : {}}
             title="Preview"
             onClick={() => onPreview(cert)}
           >
             <Eye className="w-4 h-4" />
-          </button>
+          </button> */}
         </div>
       </div>
     </div>
   );
 }
-
-// ─── Preview / live-render modal ────────────────────────────────────────────
-// function CertificatePreviewModal({
-//   cert,
-//   onClose,
-// }: {
-//   cert: UnifiedCertificate;
-//   onClose: () => void;
-// }) {
-//   return (
-//     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-//       <div className="relative w-full max-w-5xl">
-//         <button
-//           onClick={onClose}
-//           className="absolute -top-10 right-0 text-slate-300 hover:text-white flex items-center gap-1 text-sm"
-//         >
-//           <X className="w-4 h-4" /> Close
-//         </button>
-//         <Certificate
-//           studentName={cert.studentName}
-//           course={cert.title}
-//           dateConducted={new Date(cert.issueDate).toLocaleDateString()}
-//           grade={cert.grade}
-//           colorCode={cert.colorCode ?? "#3a1650"}
-//           showDownloadButton={true}
-//         />
-//       </div>
-//     </div>
-//   );
-// }
 
 // ─── Preview / live-render modal ────────────────────────────────────────────
 function CertificatePreviewModal({
@@ -199,38 +170,85 @@ function CertificatePreviewModal({
   onClose: () => void;
 }) {
   const isExam = cert.kind === "exam";
+  // Only relevant for course certs: true while we're waiting on the iframe
+  // to finish loading — which, on a first-ever preview, is exactly when
+  // the server is running Puppeteer to render the PDF. There's nothing to
+  // "wait for" client-side beyond that; hitting the URL IS the generation.
+  const [iframeLoading, setIframeLoading] = useState(!isExam);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-5xl">
-        <button
-          onClick={onClose}
-          className="absolute -top-10 right-0 text-slate-300 hover:text-white flex items-center gap-1 text-sm"
-        >
-          <X className="w-4 h-4" /> Close
-        </button>
+    // overflow-y-auto + items-start/py-8 (not items-center with no scroll)
+    // so that on short viewports the modal scrolls into view instead of
+    // its top half — close button, download toolbar — overflowing above
+    // the fold and getting clipped by the browser chrome.
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center overflow-y-auto p-4 py-8">
+      <div className="relative w-full max-w-5xl my-auto">
+        {/* Toolbar: Close on the left, Download PDF (course certs only) on
+            the right. Putting Close here — inside the normal document flow
+            — instead of absolutely positioned above the box is what stops
+            it from being pushed off-screen. */}
+        <div className="flex items-center justify-between px-4 py-3 bg-[#11141c] border border-b-0 border-[#2d3448] rounded-t-xl">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-white"
+          >
+            <X className="w-4 h-4" /> Close
+          </button>
+
+          {!isExam && (
+            <a
+              href={courseCertDownloadUrl(cert.id, "attachment")}
+              aria-disabled={iframeLoading}
+              onClick={(e) => {
+                if (iframeLoading) e.preventDefault();
+              }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-violet-700 to-violet-600 text-white font-semibold text-sm transition-opacity ${
+                iframeLoading ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
+              }`}
+            >
+              {iframeLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Download PDF
+            </a>
+          )}
+        </div>
 
         {isExam ? (
           // Exam / achievement certificates: render the live React component
-          <Certificate
-            studentName={cert.studentName}
-            course={cert.title}
-            dateConducted={new Date(cert.issueDate).toLocaleDateString()}
-            grade={cert.grade}
-            colorCode={cert.colorCode ?? "#3a1650"}
-            showDownloadButton={true}
-          />
-      ) : cert.downloadUrl ? (
-  <div className="bg-white rounded-xl overflow-hidden shadow-2xl w-full aspect-[1120/792]">
-    <iframe
-      src={`${cert.downloadUrl}?disposition=inline#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-      title={cert.title}
-      className="w-full h-full border-0"
-    />
-  </div>
-) : (
-          <div className="bg-[#161b27] rounded-xl p-10 text-center text-slate-400">
-            Certificate is still generating. Please try again shortly.
+          // (it has its own internal "Download PDF" button, so the shared
+          // toolbar above only shows Close for this branch).
+          <div className="bg-[#161b27] rounded-b-xl p-4">
+            <Certificate
+              studentName={cert.studentName}
+              course={cert.title}
+              dateConducted={new Date(cert.issueDate).toLocaleDateString()}
+              grade={cert.grade}
+              colorCode={cert.colorCode ?? "#3a1650"}
+              showDownloadButton={true}
+            />
+          </div>
+        ) : (
+          // Course certificates: always point the iframe at the download
+          // route itself (never at cert.downloadUrl, which is only set
+          // AFTER a PDF has been generated once). The route generates on
+          // first hit and serves/redirects on every hit after that, so
+          // this always works — right after course completion included.
+          <div className="relative bg-white rounded-b-xl overflow-hidden shadow-2xl w-full aspect-[1120/792]">
+            {iframeLoading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#161b27] text-slate-300">
+                <Loader2 className="w-6 h-6 animate-spin text-[#639922]" />
+                <p className="text-sm">Preparing your certificate…</p>
+              </div>
+            )}
+            <iframe
+              src={`${courseCertDownloadUrl(cert.id, "inline")}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+              title={cert.title}
+              className="w-full h-full border-0"
+              onLoad={() => setIframeLoading(false)}
+            />
           </div>
         )}
       </div>
@@ -286,9 +304,16 @@ export default function StudentCertificatesPage() {
     };
   }, []);
 
+  // Course certs: always route through the generation endpoint, same as
+  // the card/modal above — never through a possibly-null cert.downloadUrl.
   const handleDownloadAll = () => {
-    certificates.forEach((c) => c.downloadUrl && window.open(c.downloadUrl, "_blank"));
+    certificates.forEach((c) => {
+      if (c.kind === "exam") return; // exam certs download from their own component
+      window.open(courseCertDownloadUrl(c.id, "attachment"), "_blank");
+    });
   };
+
+  const hasCourseCerts = certificates.some((c) => c.kind !== "exam");
 
   return (
     <div className="min-h-screen bg-[#0f1117] text-slate-200 font-sans">
@@ -304,7 +329,7 @@ export default function StudentCertificatesPage() {
             </p>
           </div>
 
-          {certificates.some((c) => c.downloadUrl) && (
+          {hasCourseCerts && (
             <button
               onClick={handleDownloadAll}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#3b6d11] hover:bg-[#27500a] border border-[#639922] text-[#c0dd97] text-sm font-semibold transition-colors duration-150 active:scale-95"

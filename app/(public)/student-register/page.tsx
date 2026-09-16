@@ -271,7 +271,7 @@ export default function AddStudentForm({ onClose, onSave }: AddStudentFormProps)
             onChange={handleChange}
             error={fieldErrors.standard}
           />
-          <DropField label="Batch" name="batch" options={batches} value={form.batch} onChange={handleChange} />
+          {/* <DropField label="Batch" name="batch" options={batches} value={form.batch} onChange={handleChange} /> */}
           <DropField label="School Year *" name="schoolYear" options={schoolYears} value={form.schoolYear} onChange={handleChange} error={fieldErrors.schoolYear} />
         </div>
 
