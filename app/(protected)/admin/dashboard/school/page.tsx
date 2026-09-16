@@ -420,7 +420,7 @@ export default function SchoolsPage() {
                     </td>
                     <td>
                       <div className="sm-actions">
-                        <button className="sm-act-btn view" title="View school" onClick={() => router.push(`/admin/dashboard/schools/${school.id}`)}>
+                        <button className="sm-act-btn view" title="View school" onClick={() => router.push(`/admin/dashboard/school/${school.id}`)}>
                           <EyeIcon />
                         </button>
                         <button className="sm-act-btn edit" title="Edit school" onClick={() => openEditModal(school)}>

@@ -1,42 +1,5 @@
-/**
- * Certificate Template Builder Component (self-contained, working version)
- * Visual designer for creating certificate templates with live preview.
- *
- * Certificate visual design matches the "Code Excellence Edutech" reference:
- *  - gradient (blue -> violet -> magenta) outer border, thin gold inner rule
- *  - org name + large decorative "CERTIFICATE" headline
- *  - magenta ribbon banner ("OF COMPLETION")
- *  - "This is to proudly certify that" + cursive student name + underline
- *  - body paragraph with an inline blank for the course name
- *  - gold rosette seal in the middle, two signature blocks left/right
- *  - logo top-right, QR code corner
- *
- * How the two dynamic pieces work:
- *  1. ADMIN SIDE (this builder): the admin picks the Course from the
- *     dropdown in the Settings tab. That selection drives which
- *     template/course the certificate belongs to (courseId / courseCode),
- *     and the course's title is live-substituted into the body paragraph
- *     wherever the `{courseName}` token appears (currently inside the
- *     `body-text` field's content).
- *  2. STUDENT SIDE (at issue-time, outside this builder): once a student
- *     completes a course, your backend calls the certificate-generation
- *     service with the template id, the student's name, the course name,
- *     the date and a generated certificate id. That service should swap
- *     the placeholder "content" values of the `student-name`, `date` and
- *     `certificate-id` fields, and resolve the `{courseName}` /
- *     `{orgName}` tokens inside `body-text`, with the real, dynamic
- *     values before rendering/rasterizing the final PDF/PNG. Everything
- *     else in this file (colors, fonts, positions) stays exactly as
- *     designed here.
- *
- * After saving, the builder switches to a "Certificate Templates" list view
- * showing every template saved in this session, with the option to start a
- * new one.
- *
- * Drop this file into your admin app. It has no external context dependency —
- * pass `courses` in as a prop (or swap in your own MasterDataContext hook
- * where indicated below).
- */
+
+
 
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -785,7 +748,7 @@ export function CertificateTemplateBuilder({
                     />
                   </div>
 
-                  <div className={`${panelBg} rounded-xl p-4 border ${borderColor}`}>
+                  {/* <div className={`${panelBg} rounded-xl p-4 border ${borderColor}`}>
                     <h3 className={`font-bold ${textPrimary} mb-4 flex items-center gap-2`}>
                       <Palette className="w-4 h-4 text-fuchsia-400" />
                       Colors
@@ -830,9 +793,9 @@ export function CertificateTemplateBuilder({
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
-                  <div className={`${panelBg} rounded-xl p-4 border ${borderColor}`}>
+                  {/* <div className={`${panelBg} rounded-xl p-4 border ${borderColor}`}>
                     <h3 className={`font-bold ${textPrimary} mb-4 flex items-center gap-2`}>
                       <Type className="w-4 h-4 text-fuchsia-400" />
                       Body Typography
@@ -851,7 +814,7 @@ export function CertificateTemplateBuilder({
                       Headline uses Playfair Display and the student name uses Dancing Script
                       automatically, to match the certificate reference design.
                     </p>
-                  </div>
+                  </div> */}
 
                   <div className={`${panelBg} rounded-xl p-4 border ${borderColor}`}>
                     <h3 className={`font-bold ${textPrimary} mb-4 flex items-center gap-2`}>
