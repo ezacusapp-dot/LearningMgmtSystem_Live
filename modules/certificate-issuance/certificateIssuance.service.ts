@@ -1,3 +1,4 @@
+
 // // modules/certificate-issuance/certificateIssuance.service.ts
 
 // import { certificateIssuanceRepository as repo } from "./certificateIssuance.repository";
@@ -14,21 +15,6 @@
 //   return "D";
 // }
 
-// /**
-//  * A course counts as "completed" once every active *gradable* module for it
-//  * has isCompleted=true in this student's progress. FINAL_QUIZ modules are
-//  * covered, since app/api/courses/progress/route.ts marks the quiz's module
-//  * complete as soon as a passing attempt is recorded.
-//  *
-//  * REVISION modules are intentionally excluded from this check: they only
-//  * have RevisionContent (no Lessons, no Quiz), and nothing in the progress
-//  * flow ever marks that content "complete" — so if REVISION modules were
-//  * left in this check, any course containing one could NEVER be marked
-//  * complete, and its certificate would never be issued. That was the actual
-//  * cause of "other courses' certificates never show up" — it wasn't a
-//  * download mix-up, those courses simply never finished issuing in the
-//  * first place.
-//  */
 // export async function isCourseCompletedByStudent(
 //   studentId: number,
 //   courseId: string
@@ -41,13 +27,14 @@
 // }
 
 // /**
-//  * Call this any time a student's progress changes (a lesson is marked
-//  * done, a quiz attempt is recorded, etc). It's a no-op unless the course
-//  * is now fully complete and no certificate has been issued yet — so it's
-//  * safe to call after every progress update without extra guarding.
+//  * Call this any time a student's progress changes. It's a no-op unless the
+//  * course is now fully complete and no certificate row exists yet.
 //  *
-//  * On success, the issued PDF has the student's full name
-//  * (firstName + middleName + lastName) burned in, per Certificate.
+//  * IMPORTANT: this ONLY creates the certificate *record* (number, grade,
+//  * name/course snapshots). It deliberately does NOT call renderCertificatePdf
+//  * — that's the slow Puppeteer step, and we don't want every lesson/quiz
+//  * completion paying that cost. The PDF is rendered lazily, on first
+//  * download, by ensureCertificatePdf() below. pdfUrl stays null until then.
 //  */
 // export async function checkAndIssueCertificate(studentId: number, courseId: string) {
 //   const existing = await repo.findExistingCertificate(studentId, courseId);
@@ -58,8 +45,6 @@
 
 //   const template = await repo.findTemplateForCourse(courseId);
 //   if (!template) {
-//     // No certificate template configured for this course yet — nothing to
-//     // issue. Log so admins notice courses missing a template.
 //     console.warn(`Course ${courseId} completed but has no certificate template configured.`);
 //     return null;
 //   }
@@ -74,11 +59,9 @@
 //   if (!course) throw new CertificateIssuanceError("Course not found");
 
 //   const score = finalAttempt?.score ?? 100;
-//   const percentage = finalAttempt ? finalAttempt.score : 100; // adjust if score isn't already a %
+//   const percentage = finalAttempt ? finalAttempt.score : 100;
 //   const grade = gradeFromPercentage(percentage);
 
-//   // Full name = firstName + middleName (if present) + lastName, exactly as
-//   // requested — this is what gets rendered onto the certificate PDF.
 //   const studentFullName = [student.firstName, student.middleName, student.lastName]
 //     .filter(Boolean)
 //     .join(" ");
@@ -87,20 +70,9 @@
 //     template.courseCode || course.title
 //   );
 
-//   const { pdfUrl } = await renderCertificatePdf(template, {
-//     studentName: studentFullName,
-//     courseName: course.title,
-//     certificateNumber,
-//     issueDate: new Date().toLocaleDateString("en-US", {
-//       year: "numeric",
-//       month: "long",
-//       day: "numeric",
-//     }),
-//     score,
-//     percentage,
-//     grade,
-//   });
-
+//   // 🔑 No renderCertificatePdf() call here anymore. pdfUrl is left unset —
+//   // repo.createCertificate defaults it to null. This is now a fast,
+//   // DB-only write, safe to call after every lesson/quiz completion.
 //   return repo.createCertificate({
 //     certificateNumber,
 //     score,
@@ -108,7 +80,6 @@
 //     grade,
 //     studentNameSnapshot: studentFullName,
 //     courseNameSnapshot: course.title,
-//     pdfUrl,
 //     studentId,
 //     courseId,
 //     templateId: template.id,
@@ -119,16 +90,49 @@
 //   return repo.listForStudent(studentId);
 // }
 
+// /**
+//  * Ensures a PDF exists for this certificate, generating it on first call.
+//  * This is where the Puppeteer render now actually happens — triggered by
+//  * the download route the first time a student clicks Download/Preview.
+//  * Subsequent calls just return the already-saved pdfUrl (idempotent).
+//  */
+// async function ensureCertificatePdf(cert: Awaited<ReturnType<typeof repo.findByIdForStudent>>) {
+//   if (!cert) throw new CertificateIssuanceError("Certificate not found");
+//   if (cert.pdfUrl) return cert; // already rendered — nothing to do
+
+//   const template = await repo.findTemplateForCourse(cert.courseId);
+//   if (!template) {
+//     throw new CertificateIssuanceError("Certificate template no longer available");
+//   }
+
+//   const { pdfUrl } = await renderCertificatePdf(template, {
+//     studentName: cert.studentNameSnapshot,
+//     courseName: cert.courseNameSnapshot,
+//     certificateNumber: cert.certificateNumber,
+//     issueDate: cert.issuedAt.toLocaleDateString("en-US", {
+//       year: "numeric",
+//       month: "long",
+//       day: "numeric",
+//     }),
+//     score: cert.score,
+//     percentage: cert.percentage,
+//     grade: cert.grade,
+//   });
+
+//   return repo.updateCertificatePdfUrl(cert.id, pdfUrl);
+// }
+
 // export async function getCertificateForDownload(id: string, studentId: number) {
 //   const cert = await repo.findByIdForStudent(id, studentId);
 //   if (!cert) throw new CertificateIssuanceError("Certificate not found");
-//   return cert;
+//   // 🔑 Lazily render on first download instead of at issuance time.
+//   return ensureCertificatePdf(cert);
 // }
-// modules/certificate-issuance/certificateIssuance.service.ts
+
 
 import { certificateIssuanceRepository as repo } from "./certificateIssuance.repository";
 import { generateCertificateNumber } from "./certificateNumber.util";
-import { renderCertificatePdf } from "./certificatePdf.service";
+import { renderCertificatePdf, readCachedCertificatePdf } from "./certificatePdf.service";
 
 export class CertificateIssuanceError extends Error {}
 
@@ -155,11 +159,10 @@ export async function isCourseCompletedByStudent(
  * Call this any time a student's progress changes. It's a no-op unless the
  * course is now fully complete and no certificate row exists yet.
  *
- * IMPORTANT: this ONLY creates the certificate *record* (number, grade,
- * name/course snapshots). It deliberately does NOT call renderCertificatePdf
- * — that's the slow Puppeteer step, and we don't want every lesson/quiz
- * completion paying that cost. The PDF is rendered lazily, on first
- * download, by ensureCertificatePdf() below. pdfUrl stays null until then.
+ * Only creates the certificate *record* (number, grade, name/course
+ * snapshots). It never renders a PDF — rendering happens lazily, on first
+ * download, in getCertificatePdfForDownload() below, and is cached to disk
+ * after that so it never runs twice for the same certificate.
  */
 export async function checkAndIssueCertificate(studentId: number, courseId: string) {
   const existing = await repo.findExistingCertificate(studentId, courseId);
@@ -195,9 +198,6 @@ export async function checkAndIssueCertificate(studentId: number, courseId: stri
     template.courseCode || course.title
   );
 
-  // 🔑 No renderCertificatePdf() call here anymore. pdfUrl is left unset —
-  // repo.createCertificate defaults it to null. This is now a fast,
-  // DB-only write, safe to call after every lesson/quiz completion.
   return repo.createCertificate({
     certificateNumber,
     score,
@@ -216,21 +216,25 @@ export async function listCertificatesForStudent(studentId: number) {
 }
 
 /**
- * Ensures a PDF exists for this certificate, generating it on first call.
- * This is where the Puppeteer render now actually happens — triggered by
- * the download route the first time a student clicks Download/Preview.
- * Subsequent calls just return the already-saved pdfUrl (idempotent).
+ * Returns the certificate record plus its PDF as a buffer. Checks the disk
+ * cache first — if this certificate has already been rendered once, we skip
+ * Puppeteer entirely and just read the file. Only a brand-new certificate's
+ * first-ever download actually triggers a render (which then gets cached
+ * for every future click, by anyone, forever).
  */
-async function ensureCertificatePdf(cert: Awaited<ReturnType<typeof repo.findByIdForStudent>>) {
+export async function getCertificatePdfForDownload(id: string, studentId: number) {
+  const cert = await repo.findByIdForStudent(id, studentId);
   if (!cert) throw new CertificateIssuanceError("Certificate not found");
-  if (cert.pdfUrl) return cert; // already rendered — nothing to do
+
+  const cached = await readCachedCertificatePdf(cert.certificateNumber);
+  if (cached) return { cert, pdfBuffer: cached };
 
   const template = await repo.findTemplateForCourse(cert.courseId);
   if (!template) {
     throw new CertificateIssuanceError("Certificate template no longer available");
   }
 
-  const { pdfUrl } = await renderCertificatePdf(template, {
+  const pdfBuffer = await renderCertificatePdf(template, {
     studentName: cert.studentNameSnapshot,
     courseName: cert.courseNameSnapshot,
     certificateNumber: cert.certificateNumber,
@@ -244,12 +248,5 @@ async function ensureCertificatePdf(cert: Awaited<ReturnType<typeof repo.findByI
     grade: cert.grade,
   });
 
-  return repo.updateCertificatePdfUrl(cert.id, pdfUrl);
-}
-
-export async function getCertificateForDownload(id: string, studentId: number) {
-  const cert = await repo.findByIdForStudent(id, studentId);
-  if (!cert) throw new CertificateIssuanceError("Certificate not found");
-  // 🔑 Lazily render on first download instead of at issuance time.
-  return ensureCertificatePdf(cert);
+  return { cert, pdfBuffer };
 }
