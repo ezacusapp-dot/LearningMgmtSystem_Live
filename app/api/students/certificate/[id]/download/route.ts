@@ -115,12 +115,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/paseto";
 import {
-  getCertificateForDownload,
+  getCertificatePdfForDownload,
   CertificateIssuanceError,
 } from "modules/certificate-issuance/certificateIssuance.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Puppeteer render can take longer than the default timeout
 
 async function getStudentIdFromToken(req: NextRequest): Promise<number | null> {
   let token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -158,29 +159,11 @@ export async function GET(
   const disposition = searchParams.get("disposition") === "inline" ? "inline" : "attachment";
 
   try {
-    // This is the call that lazily renders the PDF on first hit,
-    // and just returns the existing record (with pdfUrl) on every hit after.
-    const cert = await getCertificateForDownload(id, studentId);
+    // 🔑 No caching, no pdfUrl, no fetch/disk read — this renders the PDF
+    // live, right now, with Puppeteer, and gives us the buffer directly.
+    const { cert, pdfBuffer } = await getCertificatePdfForDownload(id, studentId);
 
-    if (!cert.pdfUrl) {
-      return NextResponse.json(
-        { status: false, message: "Certificate could not be generated" },
-        { status: 500 }
-      );
-    }
-
-    // Stream the blob back through our own route instead of redirecting,
-    // so we control Content-Disposition (inline for the iframe preview,
-    // attachment for the real download) on a URL that never changes.
-    const upstream = await fetch(cert.pdfUrl);
-    if (!upstream.ok || !upstream.body) {
-      return NextResponse.json(
-        { status: false, message: "Failed to fetch certificate file" },
-        { status: 502 }
-      );
-    }
-
-    return new NextResponse(upstream.body, {
+    return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -197,7 +180,7 @@ export async function GET(
     }
     console.error("Certificate download error:", err);
     return NextResponse.json(
-      { status: false, message: "Failed to generate certificate" },
+      { status: false, message: err instanceof Error ? err.message : "Failed to generate certificate" },
       { status: 500 }
     );
   }
