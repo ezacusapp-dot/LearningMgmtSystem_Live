@@ -481,7 +481,9 @@
 //     await browser.close();
 //   }
 // }
-import puppeteer from 'puppeteer'; // full package — bundles a Chromium build for the host OS (Windows Server included)
+import puppeteer, { Browser } from 'puppeteer';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import type { CertificateTemplate } from '@prisma/client';
 
 export interface CertificatePdfData {
@@ -873,64 +875,116 @@ function buildCertificateHtml(template: CertificateTemplate, data: CertificatePd
 </html>`;
 }
 
-/**
- * Renders the certificate straight to a PDF buffer in memory — nothing is
- * written to disk and nothing is fetched back. Called fresh on every
- * download click, so the buffer is handed directly to the HTTP response.
- */
+// ─── Reused browser instance ────────────────────────────────────────────────
+// Launching Chromium is the expensive part of a render (1-3+ seconds, ~100-
+// 300MB RAM per launch). Since renders are now rare (cache below means each
+// certificate is only ever rendered once), we still avoid paying that cost
+// twice for two renders that happen to land close together: one Chromium
+// process is launched lazily on first use and kept alive across requests,
+// with a new page opened/closed per render instead of a new browser.
+let browserPromise: Promise<Browser> | null = null;
+
+async function getBrowser(): Promise<Browser> {
+  if (!browserPromise) {
+    browserPromise = puppeteer.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    }).catch((err) => {
+      browserPromise = null; // allow retry on next call if launch failed
+      throw err;
+    });
+  }
+  return browserPromise;
+}
+
+// ─── Concurrency cap ─────────────────────────────────────────────────────────
+// Guards against a burst of first-time renders (e.g. "Download All" across
+// several certificates at once) from spinning up too many pages/renders in
+// parallel and spiking CPU/memory. Extra callers simply queue and wait.
+const MAX_CONCURRENT_RENDERS = 2;
+let activeRenders = 0;
+const waitQueue: Array<() => void> = [];
+
+async function withRenderSlot<T>(fn: () => Promise<T>): Promise<T> {
+  if (activeRenders >= MAX_CONCURRENT_RENDERS) {
+    await new Promise<void>((resolve) => waitQueue.push(resolve));
+  }
+  activeRenders++;
+  try {
+    return await fn();
+  } finally {
+    activeRenders--;
+    const next = waitQueue.shift();
+    if (next) next();
+  }
+}
+
+// ─── Local-disk cache ────────────────────────────────────────────────────────
+// The certificate's content never changes after issuance (name/course/grade
+// are all snapshotted), so once rendered it's cached to disk permanently.
+// This is what actually removes the server-load problem: after the first
+// download, every later click for the same certificate is just a file read.
+function certificateFilePath(certificateNumber: string): string {
+  const dir = path.join(process.cwd(), 'public', 'certificates');
+  return path.join(dir, `${certificateNumber}.pdf`);
+}
+
+export async function readCachedCertificatePdf(certificateNumber: string): Promise<Buffer | null> {
+  try {
+    return await fs.readFile(certificateFilePath(certificateNumber));
+  } catch {
+    return null; // not cached yet
+  }
+}
+
 export async function renderCertificatePdf(
   template: CertificateTemplate,
   data: CertificatePdfData
 ): Promise<Buffer> {
-  const html = buildCertificateHtml(template, data);
-
-  // `puppeteer` (not puppeteer-core) auto-downloads and manages a Chromium
-  // build matched to the host OS at `npm install` time, so this works on
-  // Windows Server with no CHROME_PATH env var and no manual Chrome install.
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    defaultViewport: {
-      width: 1120,
-      height: 792,
-      deviceScaleFactor: 2,
-    },
-  });
-
-  try {
+  return withRenderSlot(async () => {
+    const html = buildCertificateHtml(template, data);
+    const browser = await getBrowser();
     const page = await browser.newPage();
 
-    await page.setViewport({
-      width: 1120,
-      height: 792,
-      deviceScaleFactor: 2,
-    });
+    try {
+      await page.setViewport({
+        width: 1120,
+        height: 792,
+        deviceScaleFactor: 2,
+      });
 
-    await page.setContent(html, { waitUntil: 'networkidle0' as any });
+      await page.setContent(html, { waitUntil: 'networkidle0' as any });
+      await page.waitForSelector('.student-name', { timeout: 5000 });
 
-    await page.waitForSelector('.student-name', { timeout: 5000 });
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images)
+            .filter(img => !img.complete)
+            .map(img => new Promise(resolve => {
+              img.onload = img.onerror = resolve;
+            }))
+        );
+      });
 
-    await page.evaluate(() => {
-      return Promise.all(
-        Array.from(document.images)
-          .filter(img => !img.complete)
-          .map(img => new Promise(resolve => {
-            img.onload = img.onerror = resolve;
-          }))
-      );
-    });
+      const pdfBuffer = await page.pdf({
+        width: '1120px',
+        height: '792px',
+        printBackground: true,
+        margin: { top: 0, bottom: 0, left: 0, right: 0 },
+        preferCSSPageSize: true,
+      });
 
-    const pdfBuffer = await page.pdf({
-      width: '1120px',
-      height: '792px',
-      printBackground: true,
-      margin: { top: 0, bottom: 0, left: 0, right: 0 },
-      preferCSSPageSize: true,
-    });
+      const buffer = Buffer.from(pdfBuffer);
 
-    return Buffer.from(pdfBuffer);
-  } finally {
-    await browser.close();
-  }
+      // Persist to disk so this render never has to happen again.
+      const dir = path.join(process.cwd(), 'public', 'certificates');
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(certificateFilePath(data.certificateNumber), buffer);
+
+      return buffer;
+    } finally {
+      await page.close();
+    }
+  });
 }

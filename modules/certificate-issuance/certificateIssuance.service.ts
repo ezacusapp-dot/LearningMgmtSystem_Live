@@ -132,7 +132,7 @@
 
 import { certificateIssuanceRepository as repo } from "./certificateIssuance.repository";
 import { generateCertificateNumber } from "./certificateNumber.util";
-import { renderCertificatePdf } from "./certificatePdf.service";
+import { renderCertificatePdf, readCachedCertificatePdf } from "./certificatePdf.service";
 
 export class CertificateIssuanceError extends Error {}
 
@@ -159,9 +159,10 @@ export async function isCourseCompletedByStudent(
  * Call this any time a student's progress changes. It's a no-op unless the
  * course is now fully complete and no certificate row exists yet.
  *
- * This only creates the certificate *record* (number, grade, name/course
- * snapshots) — it never renders a PDF. Rendering now happens live, on every
- * download click, in getCertificatePdfForDownload() below.
+ * Only creates the certificate *record* (number, grade, name/course
+ * snapshots). It never renders a PDF — rendering happens lazily, on first
+ * download, in getCertificatePdfForDownload() below, and is cached to disk
+ * after that so it never runs twice for the same certificate.
  */
 export async function checkAndIssueCertificate(studentId: number, courseId: string) {
   const existing = await repo.findExistingCertificate(studentId, courseId);
@@ -215,14 +216,18 @@ export async function listCertificatesForStudent(studentId: number) {
 }
 
 /**
- * Renders the certificate PDF fresh, right now, for this download request.
- * No pdfUrl check, no caching, no disk/blob storage involved — every click
- * re-runs Puppeteer and hands back a brand-new buffer plus the certificate
- * record (used for the filename/number in the response headers).
+ * Returns the certificate record plus its PDF as a buffer. Checks the disk
+ * cache first — if this certificate has already been rendered once, we skip
+ * Puppeteer entirely and just read the file. Only a brand-new certificate's
+ * first-ever download actually triggers a render (which then gets cached
+ * for every future click, by anyone, forever).
  */
 export async function getCertificatePdfForDownload(id: string, studentId: number) {
   const cert = await repo.findByIdForStudent(id, studentId);
   if (!cert) throw new CertificateIssuanceError("Certificate not found");
+
+  const cached = await readCachedCertificatePdf(cert.certificateNumber);
+  if (cached) return { cert, pdfBuffer: cached };
 
   const template = await repo.findTemplateForCourse(cert.courseId);
   if (!template) {

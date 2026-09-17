@@ -121,7 +121,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // Puppeteer render can take longer than the default timeout
+export const maxDuration = 60; // covers the rare first-time render; cached hits return in milliseconds
 
 async function getStudentIdFromToken(req: NextRequest): Promise<number | null> {
   let token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -159,11 +159,15 @@ export async function GET(
   const disposition = searchParams.get("disposition") === "inline" ? "inline" : "attachment";
 
   try {
-    // 🔑 No caching, no pdfUrl, no fetch/disk read — this renders the PDF
-    // live, right now, with Puppeteer, and gives us the buffer directly.
+    // Cached on every call after the first — see certificateIssuance.service.ts
     const { cert, pdfBuffer } = await getCertificatePdfForDownload(id, studentId);
 
-    return new NextResponse(pdfBuffer, {
+    // NextResponse's body type expects Uint8Array<ArrayBuffer>, but newer
+    // @types/node makes Buffer generic over ArrayBufferLike, so passing a
+    // Buffer directly fails type-checking at build time even though it
+    // works fine at runtime. Wrapping it in a plain Uint8Array satisfies
+    // the type without copying (it shares the same underlying memory).
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -173,9 +177,6 @@ export async function GET(
     });
   } catch (err) {
     if (err instanceof CertificateIssuanceError) {
-      // This is the exact "not found" you're seeing if the certificate row
-      // doesn't exist for this id+studentId — e.g. wrong id passed in, or
-      // the student clicking a cert that belongs to someone else.
       return NextResponse.json({ status: false, message: err.message }, { status: 404 });
     }
     console.error("Certificate download error:", err);
