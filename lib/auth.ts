@@ -1,16 +1,121 @@
-// lib/auth.ts
-//
-// Shared "who is this student" helper for API routes. Built on top of the
-// existing lib/paseto.ts (V3.decrypt) — that file is NOT modified.
-//
-// Reads the token from either the Authorization header or the httpOnly
-// cookie set at login (see app/api/auth/student-login/route.ts), verifies
-// it, then confirms the student still exists in the DB before trusting it.
+// // lib/auth.ts
+// //
+// // Shared "who is this student" helper for API routes. Built on top of the
+// // existing lib/paseto.ts (V3.decrypt) — that file is NOT modified.
+// //
+// // Reads the token from either the Authorization header or the httpOnly
+// // cookie set at login (see app/api/auth/student-login/route.ts), verifies
+// // it, then confirms the student still exists in the DB before trusting it.
+
+// import { NextRequest } from "next/server";
+// import { prisma } from "@/lib/prisma";
+// import { verifyToken } from "@/lib/paseto";
+
+// export interface SessionStudent {
+//   id: number;
+//   username: string;
+//   firstName: string;
+//   middleName: string | null;
+//   lastName: string;
+// }
+
+// /**
+//  * Returns just the numeric student id, or null if unauthenticated/invalid.
+//  * Use this in routes that only need the id (most of them).
+//  */
+// export async function getStudentIdFromSession(req: NextRequest): Promise<number | null> {
+//   const student = await getStudentFromSession(req);
+//   return student ? student.id : null;
+// }
+
+// /**
+//  * Returns the full student record (id + name fields), or null.
+//  * Use this where you need the student's name, e.g. anything certificate-related.
+//  */
+// export async function getStudentFromSession(req: NextRequest): Promise<SessionStudent | null> {
+//   let token = req.headers.get("authorization")?.replace("Bearer ", "");
+//   if (!token) {
+//     token = req.cookies.get("token")?.value;
+//   }
+//   if (!token) return null;
+
+//   try {
+//     // V3.decrypt (from lib/paseto.ts) throws on expired/invalid/tampered
+//     // tokens rather than resolving to null — the catch below handles that.
+//     const payload = await verifyToken(token);
+//     if (!payload || payload.id === undefined || payload.id === null) return null;
+
+//     // payload.id round-trips as a number since Student.id is Int, but stay
+//     // defensive in case the token shape ever changes.
+//     const studentId =
+//       typeof payload.id === "number" ? payload.id : parseInt(String(payload.id), 10);
+//     if (Number.isNaN(studentId)) return null;
+
+//     const student = await prisma.student.findUnique({ where: { id: studentId } });
+//     if (!student) return null;
+
+//     return {
+//       id: student.id,
+//       username: student.username,
+//       firstName: student.firstName,
+//       middleName: student.middleName,
+//       lastName: student.lastName,
+//     };
+//   } catch (error) {
+//     console.error("Token verification failed:", error);
+//     return null;
+//   }
+// }
+// export interface SessionSchool {
+//   id: string;
+//   name: string;
+//   role: string;
+// }
+
+// /**
+//  * Returns just the school id from a school-admin session, or null.
+//  */
+// export async function getSchoolIdFromSession(req: NextRequest): Promise<string | null> {
+//   const school = await getSchoolFromSession(req);
+//   return school ? school.id : null;
+// }
+
+// /**
+//  * Returns the full school record for the logged-in school admin, or null.
+//  */
+// export async function getSchoolFromSession(req: NextRequest): Promise<SessionSchool | null> {
+//   let token = req.headers.get("authorization")?.replace("Bearer ", "");
+//   if (!token) {
+//     token = req.cookies.get("token")?.value;
+//   }
+//   if (!token) return null;
+
+//   try {
+//     const payload = await verifyToken(token);
+//     if (!payload) return null;
+//     if (payload.role !== "SCHOOL_ADMIN") return null;
+
+//     // ⚠️ VERIFY: change this line if your school login signs `schoolId` instead of `id`
+//     const schoolId = payload.id !== undefined && payload.id !== null ? String(payload.id) : null;
+//     if (!schoolId) return null;
+
+//     const school = await prisma.school.findUnique({ where: { id: schoolId } });
+//     if (!school) return null;
+
+//     return { id: school.id, name: school.name, role: payload.role as string };
+//   } catch (error) {
+//     console.error("Token verification failed:", error);
+//     return null;
+//   }
+// }
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/paseto";
 
+/* ═══════════════════════════════════════
+   STUDENT SESSION  (unchanged — already existed)
+═══════════════════════════════════════ */
 export interface SessionStudent {
   id: number;
   username: string;
@@ -19,19 +124,11 @@ export interface SessionStudent {
   lastName: string;
 }
 
-/**
- * Returns just the numeric student id, or null if unauthenticated/invalid.
- * Use this in routes that only need the id (most of them).
- */
 export async function getStudentIdFromSession(req: NextRequest): Promise<number | null> {
   const student = await getStudentFromSession(req);
   return student ? student.id : null;
 }
 
-/**
- * Returns the full student record (id + name fields), or null.
- * Use this where you need the student's name, e.g. anything certificate-related.
- */
 export async function getStudentFromSession(req: NextRequest): Promise<SessionStudent | null> {
   let token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) {
@@ -40,13 +137,9 @@ export async function getStudentFromSession(req: NextRequest): Promise<SessionSt
   if (!token) return null;
 
   try {
-    // V3.decrypt (from lib/paseto.ts) throws on expired/invalid/tampered
-    // tokens rather than resolving to null — the catch below handles that.
     const payload = await verifyToken(token);
     if (!payload || payload.id === undefined || payload.id === null) return null;
 
-    // payload.id round-trips as a number since Student.id is Int, but stay
-    // defensive in case the token shape ever changes.
     const studentId =
       typeof payload.id === "number" ? payload.id : parseInt(String(payload.id), 10);
     if (Number.isNaN(studentId)) return null;
@@ -61,6 +154,91 @@ export async function getStudentFromSession(req: NextRequest): Promise<SessionSt
       middleName: student.middleName,
       lastName: student.lastName,
     };
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+}
+
+/* ═══════════════════════════════════════
+   SCHOOL SESSION  (for the school-admin panel)
+═══════════════════════════════════════ */
+export interface SessionSchool {
+  id: string;
+  name: string;
+  role: string;
+}
+
+export async function getSchoolIdFromSession(req: NextRequest): Promise<string | null> {
+  const school = await getSchoolFromSession(req);
+  return school ? school.id : null;
+}
+
+export async function getSchoolFromSession(req: NextRequest): Promise<SessionSchool | null> {
+  let token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) {
+    token = req.cookies.get("token")?.value;
+  }
+  if (!token) return null;
+
+  try {
+    const payload = await verifyToken(token);
+    if (!payload) return null;
+    if (payload.role !== "SCHOOL_ADMIN") return null;
+
+    // ⚠️ VERIFY: change to payload.schoolId if that's what your school
+    // login actually signs instead of payload.id
+    const schoolId = payload.id !== undefined && payload.id !== null ? String(payload.id) : null;
+    if (!schoolId) return null;
+
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) return null;
+
+    return { id: school.id, name: school.name, role: payload.role as string };
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+}
+
+/* ═══════════════════════════════════════
+   SUPER ADMIN SESSION  (for the admin panel)
+   — placeholder until you share the SUPER_ADMIN login code.
+     Not wired into any controller yet; safe to leave unused.
+═══════════════════════════════════════ */
+export interface SessionAdmin {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export async function getAdminIdFromSession(req: NextRequest): Promise<string | null> {
+  const admin = await getAdminFromSession(req);
+  return admin ? admin.id : null;
+}
+
+export async function getAdminFromSession(req: NextRequest): Promise<SessionAdmin | null> {
+  let token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) {
+    token = req.cookies.get("token")?.value;
+  }
+  if (!token) return null;
+
+  try {
+    const payload = await verifyToken(token);
+    if (!payload) return null;
+    if (payload.role !== "SUPER_ADMIN") return null;
+
+    const adminId = payload.id !== undefined && payload.id !== null ? String(payload.id) : null;
+    if (!adminId) return null;
+
+    // Assumes SUPER_ADMIN rows live in your `User` model per the schema
+    // (role: SUPER_ADMIN). Confirm once you share the login code.
+    const admin = await prisma.user.findUnique({ where: { id: adminId } });
+    if (!admin || admin.role !== "SUPER_ADMIN" || !admin.isActive) return null;
+
+    return { id: admin.id, name: admin.name, email: admin.email, role: admin.role };
   } catch (error) {
     console.error("Token verification failed:", error);
     return null;

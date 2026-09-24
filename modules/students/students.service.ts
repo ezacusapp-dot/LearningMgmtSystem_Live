@@ -1,5 +1,6 @@
+
 // students.service.ts
-import bcrypt from "bcrypt" // Use bcrypt (consistent with school service)
+import bcrypt from "bcrypt";
 import {
   createStudentRepo,
   findStudentByUsernameRepo,
@@ -8,43 +9,54 @@ import {
   countStudentRepo,
   updateStudentRepo,
   deleteStudentRepo,
+  findSchoolByIdRepo,
 } from "./students.repository";
 
 const SALT_ROUNDS = 10;
 
-// Helper to exclude password from returned object (optional)
 const excludePassword = (student: any) => {
   if (!student) return student;
   const { password, ...rest } = student;
   return rest;
 };
 
+// Every student must point to an existing, active school
+const assertSchoolValid = async (schoolId?: string) => {
+  if (!schoolId) throw new Error("School is required");
+
+  const school = await findSchoolByIdRepo(schoolId);
+  if (!school) throw new Error("Selected school does not exist");
+  if (!school.active) throw new Error("Selected school is inactive");
+};
+
 /* ═══════════════════════════════════════
-   CREATE - with password hashing
+   CREATE
 ═══════════════════════════════════════ */
 export const createStudentService = async (data: any) => {
-  // ── Duplicate username check ──
   const existingUsername = await findStudentByUsernameRepo(data.username);
-  if (existingUsername) throw new Error("Username already exists. Please choose another.");
+  if (existingUsername) {
+    throw new Error("Username already exists. Please choose another.");
+  }
 
-  // Hash the password before storing (same as school service)
+  // Student can only be saved against a valid school
+  await assertSchoolValid(data.schoolId);
+
   const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
-  
-  const createData = {
+
+  const created = await createStudentRepo({
     ...data,
     password: hashedPassword,
-    role: "STUDENT",  // Explicitly set role (matches your schema default)
-  };
-  
-  const created = await createStudentRepo(createData);
-  return excludePassword(created);  // Return without password
+    role: "STUDENT",
+  });
+
+  return excludePassword(created);
 };
 
 /* ═══════════════════════════════════════
    GET LIST
 ═══════════════════════════════════════ */
 export const getStudentService = async (query: any) => {
-  const { page, limit, search, standard, batch } = query;
+  const { page, limit, search, standard, batch, schoolId } = query;
 
   const skip = (page - 1) * limit;
   const where: any = {};
@@ -61,12 +73,11 @@ export const getStudentService = async (query: any) => {
 
   if (standard) where.standard = standard;
   if (batch)    where.batch    = batch;
+  if (schoolId) where.schoolId = schoolId;
 
   const total = await countStudentRepo(where);
-  let data = await getStudentRepo(where, skip, limit);
-  
-  // Exclude passwords from all students
-  data = data.map(excludePassword);
+  const rows = await getStudentRepo(where, skip, limit);
+  const data = rows.map(excludePassword);
 
   return {
     data,
@@ -80,37 +91,109 @@ export const getStudentService = async (query: any) => {
 };
 
 /* ═══════════════════════════════════════
-   UPDATE - with optional password hashing
+   UPDATE
 ═══════════════════════════════════════ */
-export const updateStudentService = async (id: string, data: any) => {
-  const numId    = parseInt(id);
+// export const updateStudentService = async (id: string, data: any) => {
+//   const numId = parseInt(id);
+//   const existing = await findStudentByIdRepo(numId);
+//   if (!existing) throw new Error("Student not found");
+
+//   if (data.username && data.username !== existing.username) {
+//     const taken = await findStudentByUsernameRepo(data.username);
+//     if (taken) throw new Error("Username already exists. Please choose another.");
+//   }
+
+//   const updateData: any = { ...data };
+
+//   if (updateData.password) {
+//     updateData.password = await bcrypt.hash(updateData.password, SALT_ROUNDS);
+//   }
+
+//   // School can be changed, but never cleared, and must be valid
+//   if ("schoolId" in updateData) {
+//     if (!updateData.schoolId) {
+//       delete updateData.schoolId;
+//     } else if (updateData.schoolId !== existing.schoolId) {
+//       await assertSchoolValid(updateData.schoolId);
+//     }
+//   }
+
+//   const updated = await updateStudentRepo(numId, updateData, existing.schoolId);
+//   return excludePassword(updated);
+// };
+
+// /* ═══════════════════════════════════════
+//    DELETE
+// ═══════════════════════════════════════ */
+// export const deleteStudentService = async (id: string) => {
+//   const numId = parseInt(id);
+//   const existing = await findStudentByIdRepo(numId);
+//   if (!existing) throw new Error("Student not found");
+
+//   await deleteStudentRepo(numId, existing.schoolId);
+// };
+
+/* ═══════════════════════════════════════
+   UPDATE
+═══════════════════════════════════════ */
+/* ═══════════════════════════════════════
+   UPDATE
+   callerSchoolId: the caller's schoolId to enforce ownership
+   (school-admin route), or null to bypass the check (admin route).
+═══════════════════════════════════════ */
+export const updateStudentService = async (
+  id: string,
+  data: any,
+  callerSchoolId: string | null
+) => {
+  const numId = parseInt(id);
   const existing = await findStudentByIdRepo(numId);
   if (!existing) throw new Error("Student not found");
 
-  // ── If username is being changed, check it's not taken by another student ──
+  // Only enforce ownership when a real schoolId was supplied.
+  if (callerSchoolId !== null && existing.schoolId !== callerSchoolId) {
+    throw new Error("Student not found");
+  }
+
   if (data.username && data.username !== existing.username) {
     const taken = await findStudentByUsernameRepo(data.username);
     if (taken) throw new Error("Username already exists. Please choose another.");
   }
 
-  // Hash new password if provided
-  let updateData = { ...data };
+  const updateData: any = { ...data };
+
   if (updateData.password) {
     updateData.password = await bcrypt.hash(updateData.password, SALT_ROUNDS);
   }
 
-  const updated = await updateStudentRepo(numId, updateData);
+  if (callerSchoolId !== null) {
+    // School-admin path: schoolId can never be reassigned through this route.
+    delete updateData.schoolId;
+  } else if (updateData.schoolId) {
+    // Admin path: schoolId can be reassigned, but must point to a real, active school.
+    await assertSchoolValid(updateData.schoolId);
+  }
+
+  const updated = await updateStudentRepo(numId, updateData, existing.schoolId);
   return excludePassword(updated);
 };
 
 /* ═══════════════════════════════════════
    DELETE
 ═══════════════════════════════════════ */
-export const deleteStudentService = async (id: string) => {
-  const numId    = parseInt(id);
+export const deleteStudentService = async (
+  id: string,
+  callerSchoolId: string | null
+) => {
+  const numId = parseInt(id);
   const existing = await findStudentByIdRepo(numId);
   if (!existing) throw new Error("Student not found");
-  return deleteStudentRepo(numId);
+
+  if (callerSchoolId !== null && existing.schoolId !== callerSchoolId) {
+    throw new Error("Student not found");
+  }
+
+  await deleteStudentRepo(numId, existing.schoolId);
 };
 
 /* ═══════════════════════════════════════
@@ -124,7 +207,7 @@ export const getStudentByIdService = async (id: string) => {
 };
 
 /* ═══════════════════════════════════════
-   LOGIN SERVICE (if needed for students)
+   LOGIN SERVICE
 ═══════════════════════════════════════ */
 export const loginStudentService = async (username: string, password: string) => {
   const student = await findStudentByUsernameRepo(username);

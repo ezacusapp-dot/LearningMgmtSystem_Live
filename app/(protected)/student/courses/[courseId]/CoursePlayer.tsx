@@ -1,6 +1,8 @@
+
+
 // "use client";
 
-// import { useState, useEffect } from "react";
+// import { useState, useEffect, useRef } from "react";
 // import toast from "react-hot-toast";
 // import { Loader2 } from "lucide-react";
 // import { type ExamData } from "./ExamPlayer";
@@ -68,6 +70,38 @@
 //   thumbnail: string | null;
 //   category: string;
 //   sections: Section[];
+// }
+
+// type QuizAttempt = {
+//   score: number;
+//   isPassed: boolean;
+//   answers?: Record<string, string>;
+// };
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // Certificate download helper (authenticated)
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// async function downloadCertificateBlob(
+//   certificateId: string,
+//   certificateNumber?: string
+// ): Promise<void> {
+//   const token = localStorage.getItem("token");
+//   const res = await fetch(
+//     `/api/students/certificate/${certificateId}/download?disposition=attachment`,
+//     { headers: { Authorization: `Bearer ${token}` } }
+//   );
+//   if (!res.ok) throw new Error(`Download failed (${res.status})`);
+
+//   const blob = await res.blob();
+//   const url = URL.createObjectURL(blob);
+//   const a = document.createElement("a");
+//   a.href = url;
+//   a.download = `certificate-${certificateNumber ?? certificateId}.pdf`;
+//   document.body.appendChild(a);
+//   a.click();
+//   a.remove();
+//   URL.revokeObjectURL(url);
 // }
 
 // // ─────────────────────────────────────────────────────────────────────────────
@@ -189,8 +223,23 @@
 //   );
 // }
 
+// function AwardIcon({ size = 22 }: { size?: number }) {
+//   return (
+//     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+//       <circle cx="12" cy="9" r="5" stroke="#c0dd97" strokeWidth="1.6" />
+//       <path
+//         d="M9 13.5L7 21l5-2.5L17 21l-2-7.5"
+//         stroke="#c0dd97"
+//         strokeWidth="1.6"
+//         strokeLinecap="round"
+//         strokeLinejoin="round"
+//       />
+//     </svg>
+//   );
+// }
+
 // // ─────────────────────────────────────────────────────────────────────────────
-// // Checkbox Component
+// // Checkbox
 // // ─────────────────────────────────────────────────────────────────────────────
 
 // function Checkbox({
@@ -225,7 +274,7 @@
 // }
 
 // // ─────────────────────────────────────────────────────────────────────────────
-// // Module Progress Component
+// // Module Progress
 // // ─────────────────────────────────────────────────────────────────────────────
 
 // function ModuleProgress({
@@ -249,16 +298,10 @@
 // }
 
 // // ─────────────────────────────────────────────────────────────────────────────
-// // Sidebar Mock Exam Entry Component
+// // Sidebar Mock Exam Entry
 // // ─────────────────────────────────────────────────────────────────────────────
 
-// function SidebarMockExamEntry({
-//   exam,
-//   onStart,
-// }: {
-//   exam: ExamData;
-//   onStart: () => void;
-// }) {
+// function SidebarMockExamEntry({ exam, onStart }: { exam: ExamData; onStart: () => void }) {
 //   const allQCount =
 //     exam.sections?.length > 0
 //       ? exam.sections.reduce((s, sec) => s + (sec.questions?.length ?? 0), 0)
@@ -282,7 +325,6 @@
 //           "linear-gradient(90deg, rgba(99,153,34,0.09) 0%, rgba(99,153,34,0.02) 100%)";
 //       }}
 //     >
-//       {/* Clock icon */}
 //       <div
 //         className="flex-shrink-0 flex items-center justify-center rounded-lg mt-0.5"
 //         style={{ width: 28, height: 28, background: "rgba(99,153,34,0.18)" }}
@@ -290,7 +332,6 @@
 //         <ExamClockIcon size={15} />
 //       </div>
 
-//       {/* Info */}
 //       <div className="flex-1 min-w-0">
 //         <p className="text-[10px] font-bold text-[#639922] uppercase tracking-wide mb-[2px]">
 //           Mock Exam
@@ -305,7 +346,6 @@
 //         </div>
 //       </div>
 
-//       {/* Start button */}
 //       <button
 //         onClick={(e) => {
 //           e.stopPropagation();
@@ -324,7 +364,7 @@
 // }
 
 // // ─────────────────────────────────────────────────────────────────────────────
-// // Sidebar Module Component
+// // Sidebar Module
 // // ─────────────────────────────────────────────────────────────────────────────
 
 // function SidebarModule({
@@ -456,7 +496,6 @@
 //             );
 //           })}
 
-//           {/* Mock Exam entry — only appended to the last module */}
 //           {isLastModule && mockExam && onStartExam && (
 //             <SidebarMockExamEntry exam={mockExam} onStart={onStartExam} />
 //           )}
@@ -467,7 +506,7 @@
 // }
 
 // // ─────────────────────────────────────────────────────────────────────────────
-// // Quiz View Component
+// // Quiz View
 // // ─────────────────────────────────────────────────────────────────────────────
 
 // function QuizView({
@@ -477,7 +516,7 @@
 //   onSubmitQuiz,
 // }: {
 //   lesson: LessonItem;
-//   quizAttempt?: { score: number; isPassed: boolean };
+//   quizAttempt?: QuizAttempt;
 //   onQuizComplete?: (passed: boolean) => void;
 //   onSubmitQuiz?: (
 //     quizId: string,
@@ -486,10 +525,23 @@
 //     answers: Record<string, string>
 //   ) => Promise<void>;
 // }) {
-//   const [answers, setAnswers] = useState<Record<string, string>>({});
+//   // ✅ Hydrate from the saved attempt so reload → review shows real answers
+//   const [answers, setAnswers] = useState<Record<string, string>>(
+//     quizAttempt?.answers ?? {}
+//   );
 //   const [submitted, setSubmitted] = useState(!!quizAttempt);
 //   const [submitting, setSubmitting] = useState(false);
 //   const [showResults, setShowResults] = useState(false);
+
+//   // Re-sync if the attempt arrives asynchronously (e.g. after loadProgress)
+//   useEffect(() => {
+//     if (quizAttempt?.answers) {
+//       setAnswers(quizAttempt.answers);
+//     }
+//     if (quizAttempt) {
+//       setSubmitted(true);
+//     }
+//   }, [quizAttempt]);
 
 //   const questions = lesson.questions ?? [];
 //   const getQuestionPoints = (q: QuizQuestion) => q.points || 1;
@@ -535,9 +587,8 @@
 //     if (onQuizComplete) onQuizComplete(passedQuiz);
 //   };
 
-//   // Already attempted — show score summary first
 //   if (quizAttempt && submitted && !showResults) {
-//     const percentage = (quizAttempt.score / totalPossible) * 100;
+//     const percentage = totalPossible > 0 ? (quizAttempt.score / totalPossible) * 100 : 0;
 //     return (
 //       <div className="mx-6 mb-6">
 //         <div className="bg-[#161b27] border border-[#2d3448] rounded-2xl p-6">
@@ -571,10 +622,9 @@
 //     );
 //   }
 
-//   // Results view
 //   if (submitted && showResults) {
 //     const { totalScore, results } = calculateScoreAndDetails();
-//     const percentage = (totalScore / totalPossible) * 100;
+//     const percentage = totalPossible > 0 ? (totalScore / totalPossible) * 100 : 0;
 //     const passed = percentage >= (lesson.passingMarks || 0);
 
 //     return (
@@ -723,7 +773,6 @@
 //     );
 //   }
 
-//   // Quiz form
 //   const answeredCount = Object.keys(answers).length;
 //   const canSubmit = answeredCount === questions.length;
 
@@ -747,7 +796,9 @@
 //               <div className="w-32 h-1.5 bg-[#2d3448] rounded-full overflow-hidden">
 //                 <div
 //                   className="h-full bg-[#639922] rounded-full transition-all duration-300"
-//                   style={{ width: `${(answeredCount / questions.length) * 100}%` }}
+//                   style={{
+//                     width: `${questions.length ? (answeredCount / questions.length) * 100 : 0}%`,
+//                   }}
 //                 />
 //               </div>
 //               <span className="text-[11px] text-slate-500">
@@ -867,18 +918,27 @@
 // }
 
 // // ─────────────────────────────────────────────────────────────────────────────
-// // Video Player Component
+// // Video Player
 // // ─────────────────────────────────────────────────────────────────────────────
 
 // function VideoPlayer({
 //   lesson,
 //   isPlaying,
 //   onTogglePlay,
+//   onVideoEnded,
+//   onVideoProgress,
+//   isCompleted,
 // }: {
 //   lesson: LessonItem | null;
 //   isPlaying: boolean;
 //   onTogglePlay: () => void;
+//   onVideoEnded?: () => void;
+//   onVideoProgress?: (progress: number) => void;
+//   isCompleted?: boolean;
 // }) {
+//   const [videoProgress, setVideoProgress] = useState(0);
+//   const [hasReachedEnd, setHasReachedEnd] = useState(false);
+
 //   if (lesson?.fileUrl && isPlaying) {
 //     const url = lesson.fileUrl;
 
@@ -887,10 +947,19 @@
 //       return (
 //         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
 //           <iframe
-//             src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`}
+//             src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&enablejsapi=1`}
 //             className="absolute inset-0 w-full h-full"
 //             allow="autoplay; fullscreen"
 //             allowFullScreen
+//             onLoad={() => {
+//               // Notify parent that playback started (for watch tracking)
+//               onVideoProgress?.(1);
+//               setTimeout(() => {
+//                 if (onVideoEnded && !isCompleted) {
+//                   onVideoEnded();
+//                 }
+//               }, 30000);
+//             }}
 //           />
 //         </div>
 //       );
@@ -908,6 +977,42 @@
 //             allow="autoplay; fullscreen; picture-in-picture"
 //             allowFullScreen
 //             frameBorder="0"
+//             onLoad={() => {
+//               onVideoProgress?.(1);
+//               setTimeout(() => {
+//                 if (onVideoEnded && !isCompleted) {
+//                   onVideoEnded();
+//                 }
+//               }, 30000);
+//             }}
+//           />
+//         </div>
+//       );
+//     }
+
+//     const gumletMatch = url.match(
+//       /(?:play\.gumlet\.io\/embed\/|gumlet\.tv\/watch\/)([a-zA-Z0-9]+)/
+//     );
+
+//     if (gumletMatch) {
+//       const videoId = gumletMatch[1];
+//       return (
+//         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+//           <iframe
+//             src={`https://play.gumlet.io/embed/${videoId}?autoplay=1`}
+//             className="absolute inset-0 w-full h-full"
+//             allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write"
+//             allowFullScreen
+//             frameBorder="0"
+//             referrerPolicy="origin"
+//             onLoad={() => {
+//               onVideoProgress?.(1);
+//               setTimeout(() => {
+//                 if (onVideoEnded && !isCompleted) {
+//                   onVideoEnded();
+//                 }
+//               }, 30000);
+//             }}
 //           />
 //         </div>
 //       );
@@ -921,7 +1026,29 @@
 //             controls
 //             autoPlay
 //             className="absolute inset-0 w-full h-full bg-black"
+//             onTimeUpdate={(e) => {
+//               const video = e.currentTarget;
+//               const progress = (video.currentTime / video.duration) * 100;
+//               setVideoProgress(progress);
+//               onVideoProgress?.(progress);
+
+//               if (progress >= 90 && !hasReachedEnd && onVideoEnded && !isCompleted) {
+//                 setHasReachedEnd(true);
+//                 onVideoEnded();
+//               }
+//             }}
+//             onEnded={() => {
+//               if (onVideoEnded && !isCompleted) {
+//                 onVideoEnded();
+//               }
+//             }}
 //           />
+//           <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#2d3448]">
+//             <div
+//               className="h-full bg-[#639922] transition-all duration-300"
+//               style={{ width: `${videoProgress}%` }}
+//             />
+//           </div>
 //         </div>
 //       );
 //     }
@@ -947,7 +1074,9 @@
 //           <div className="w-16 h-16 rounded-full bg-[#639922] flex items-center justify-center shadow-lg group-hover:bg-[#3b6d11] transition-colors active:scale-95">
 //             <PlayIcon />
 //           </div>
-//           <p className="text-[11px] text-slate-400">{lesson?.title}</p>
+//           <p className="text-[11px] text-slate-400">
+//             {isCompleted ? "✓ Completed" : lesson?.title}
+//           </p>
 //         </button>
 //       ) : (
 //         <div className="relative z-10 flex flex-col items-center gap-2">
@@ -964,7 +1093,7 @@
 // }
 
 // // ─────────────────────────────────────────────────────────────────────────────
-// // PDF Viewer Component
+// // PDF Viewer
 // // ─────────────────────────────────────────────────────────────────────────────
 
 // function PDFView({ lesson, onClose }: { lesson: LessonItem; onClose?: () => void }) {
@@ -1108,7 +1237,7 @@
 // }
 
 // // ─────────────────────────────────────────────────────────────────────────────
-// // Main CoursePlayer Component
+// // Main CoursePlayer
 // // ─────────────────────────────────────────────────────────────────────────────
 
 // export default function CoursePlayer({
@@ -1126,10 +1255,14 @@
 
 //   const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null);
 //   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-//   const [quizAttempts, setQuizAttempts] = useState<
-//     Map<string, { score: number; isPassed: boolean }>
-//   >(new Map());
+//   const [quizAttempts, setQuizAttempts] = useState<Map<string, QuizAttempt>>(new Map());
 //   const [loading, setLoading] = useState(true);
+//   const [certificate, setCertificate] = useState<{
+//     id: string;
+//     certificateNumber?: string;
+//   } | null>(null);
+//   const [certDownloading, setCertDownloading] = useState(false);
+//   const startedRef = useRef(false);
 
 //   const allLessons: LessonItem[] = (course.sections ?? []).flatMap((s) => s.items);
 //   const defaultLesson = allLessons.find((i) => i.active) ?? allLessons[0] ?? null;
@@ -1141,6 +1274,9 @@
 //     "Overview"
 //   );
 
+//   // ✅ Watched videos tracked per lesson id (survives lesson switching)
+//   const [watchedVideoIds, setWatchedVideoIds] = useState<Set<string>>(new Set());
+
 //   const currentIdx = allLessons.findIndex((l) => l.id === activeLesson?.id);
 //   const prevLesson = currentIdx > 0 ? allLessons[currentIdx - 1] : null;
 //   const nextLesson = currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1] : null;
@@ -1150,6 +1286,28 @@
 //     allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
 
 //   const isCurrentLessonCompleted = !!activeLesson && completedIds.has(activeLesson.id);
+//   const isVideoWatched = !!activeLesson && watchedVideoIds.has(activeLesson.id);
+
+//   /**
+//    * Resolve a quiz attempt for a lesson, checking BOTH possible keys
+//    * (quizId and moduleId) since the API sets both.
+//    */
+//   const getQuizAttemptFor = (lesson: LessonItem | null): QuizAttempt | undefined => {
+//     if (!lesson?.quizId) return undefined;
+//     return quizAttempts.get(lesson.quizId);
+//   };
+
+//   const canAccessNextLesson = () => {
+//     if (!activeLesson) return false;
+//     if (activeLesson.type === "video") return isCurrentLessonCompleted;
+//     if (activeLesson.type === "doc") return true;
+//     if (activeLesson.type === "quiz") {
+//       return !!getQuizAttemptFor(activeLesson);
+//     }
+//     return true;
+//   };
+
+//   const canAccessPrevLesson = () => true;
 
 //   useEffect(() => {
 //     loadProgress();
@@ -1165,19 +1323,50 @@
 //       const json = await res.json();
 
 //       if (json.status && json.data) {
-//         setCompletedIds(new Set(json.data.completedLessonIds || []));
-
-//         const attempts = new Map<string, { score: number; isPassed: boolean }>();
-//         json.data.quizAttempts?.forEach((attempt: any) => {
-//           attempts.set(attempt.quizId, { score: attempt.score, isPassed: attempt.isPassed });
+//         // Key by BOTH quizId and moduleId, and carry answers through
+//         const attempts = new Map<string, QuizAttempt>();
+//         json.data.quizAttempts?.forEach((a: any) => {
+//           const v: QuizAttempt = {
+//             score: a.score,
+//             isPassed: a.isPassed,
+//             answers: a.answers ?? {},
+//           };
+//           if (a.quizId) attempts.set(a.quizId, v);
+//           if (a.moduleId) attempts.set(a.moduleId, v);
 //         });
 //         setQuizAttempts(attempts);
 
+//         // Reconstruct completed set (lessons + any attempted quiz)
+//         const passedQuizItemIds = allLessons
+//           .filter((l) => l.type === "quiz" && l.quizId && attempts.has(l.quizId))
+//           .map((l) => l.id);
+
+//         setCompletedIds(
+//           new Set([...(json.data.completedLessonIds || []), ...passedQuizItemIds])
+//         );
+
+//         // If a video lesson is already completed, treat it as watched too
+//         const alreadyWatched = new Set<string>();
+//         (json.data.completedLessonIds || []).forEach((id: string) => {
+//           const lesson = allLessons.find((l) => l.id === id);
+//           if (lesson?.type === "video") alreadyWatched.add(id);
+//         });
+//         setWatchedVideoIds(alreadyWatched);
+
 //         if (json.data.enrollment) {
 //           setEnrollmentStatus(json.data.enrollment.status);
-//           if (json.data.enrollment.status === "Pending") {
+//           // Only auto-start once
+//           if (json.data.enrollment.status === "Pending" && !startedRef.current) {
+//             startedRef.current = true;
 //             await startCourse();
+//             toast.success("Course started! Good luck with your learning.");
 //           }
+//         }
+//         if (json.data.certificate) {
+//           setCertificate({
+//             id: json.data.certificate.id,
+//             certificateNumber: json.data.certificate.certificateNumber,
+//           });
 //         }
 //       }
 //     } catch (error) {
@@ -1197,18 +1386,55 @@
 //         body: JSON.stringify({ courseId: course.id, action: "start" }),
 //       });
 //       setEnrollmentStatus("InProcess");
-//       toast.success("Course started! Good luck with your learning.");
 //     } catch (error) {
 //       console.error("Failed to start course:", error);
 //     }
 //   };
 
+//   /**
+//    * Mark the currently active video as "started" so the manual checkbox
+//    * can complete it. Called the moment the user presses Play.
+//    */
+//   const markVideoStarted = (lessonId?: string) => {
+//     const id = lessonId ?? activeLesson?.id;
+//     if (!id) return;
+//     setWatchedVideoIds((prev) => {
+//       if (prev.has(id)) return prev;
+//       const next = new Set(prev);
+//       next.add(id);
+//       return next;
+//     });
+//   };
+
+//   /**
+//    * Single choke point for marking complete.
+//    * Guard lives here so the sidebar checkbox can't bypass it.
+//    */
 //   const toggleComplete = async (id: string, val: boolean) => {
 //     if (!val && completedIds.has(id)) {
 //       toast.error("Cannot unmark a completed lesson");
 //       return;
 //     }
 //     if (val && !completedIds.has(id)) {
+//       const lesson = allLessons.find((l) => l.id === id);
+//       if (!lesson) return;
+
+//       // Video: must have been started (marked watched)
+//       if (lesson.type === "video") {
+//         if (!watchedVideoIds.has(id)) {
+//           toast.error("Please watch the full video before marking as complete");
+//           return;
+//         }
+//       }
+
+//       // Quiz: must have a recorded attempt
+//       if (lesson.type === "quiz") {
+//         if (!getQuizAttemptFor(lesson)) {
+//           toast.error("Complete the quiz to mark as complete");
+//           return;
+//         }
+//       }
+
 //       try {
 //         const token = localStorage.getItem("token");
 //         const res = await fetch("/api/courses/progress", {
@@ -1224,6 +1450,15 @@
 //             setEnrollmentStatus("Complete");
 //             toast.success("Congratulations! You've completed the course! 🎓");
 //           }
+//           if (json.certificateIssued && json.certificateId) {
+//             setCertificate({
+//               id: json.certificateId,
+//               certificateNumber: json.certificateNumber ?? undefined,
+//             });
+//           }
+//           if (json.certificateError) {
+//             toast.error(json.certificateError);
+//           }
 //         } else {
 //           toast.error(json.message || "Failed to complete lesson");
 //         }
@@ -1231,6 +1466,14 @@
 //         console.error("Failed to complete lesson:", error);
 //         toast.error("Could not mark lesson as complete");
 //       }
+//     }
+//   };
+
+//   const handleVideoComplete = async () => {
+//     if (!activeLesson) return;
+//     markVideoStarted(activeLesson.id);
+//     if (!isCurrentLessonCompleted) {
+//       await toggleComplete(activeLesson.id, true);
 //     }
 //   };
 
@@ -1245,21 +1488,40 @@
 //       const res = await fetch("/api/courses/progress", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-//         body: JSON.stringify({
-//           courseId: course.id,
-//           quizId,
-//           score,
-//           passed,
-//           answers,
-//           action: "submit_quiz",
-//         }),
+//         body: JSON.stringify({ courseId: course.id, quizId, answers, action: "submit_quiz" }),
 //       });
 //       const json = await res.json();
+
 //       if (json.status) {
-//         setQuizAttempts((prev) => new Map(prev).set(quizId, { score, isPassed: passed }));
+//         const result: QuizAttempt = {
+//           score: json.score ?? score,
+//           isPassed: json.isPassed ?? passed,
+//           answers: json.answers ?? answers,
+//         };
+//         setQuizAttempts((prev) => {
+//           const m = new Map(prev);
+//           m.set(quizId, result);
+//           if (json.moduleId) m.set(json.moduleId, result);
+//           return m;
+//         });
 //         toast.success(json.message);
-//         if (passed && activeLesson && activeLesson.quizId === quizId) {
-//           await toggleComplete(activeLesson.id, true);
+
+//         if (activeLesson) {
+//           setCompletedIds((prev) => new Set(prev).add(activeLesson.id));
+//         }
+
+//         if (json.certificateIssued) {
+//           setEnrollmentStatus("Complete");
+//           toast.success("Congratulations! You've completed the course! 🎓");
+//           if (json.certificateId) {
+//             setCertificate({
+//               id: json.certificateId,
+//               certificateNumber: json.certificateNumber ?? undefined,
+//             });
+//           }
+//         }
+//         if (json.certificateError) {
+//           toast.error(json.certificateError);
 //         }
 //       } else {
 //         toast.error(json.message || "Failed to submit quiz");
@@ -1270,14 +1532,69 @@
 //     }
 //   };
 
+//   const handleDownloadCertificate = async () => {
+//     if (!certificate?.id) {
+//       toast.error("Certificate not available yet");
+//       return;
+//     }
+//     setCertDownloading(true);
+//     const toastId = toast.loading("Preparing your certificate…");
+//     try {
+//       await downloadCertificateBlob(certificate.id, certificate.certificateNumber);
+//       toast.success("Certificate downloaded! 🎓", { id: toastId });
+//     } catch (err: any) {
+//       console.error("Certificate download failed:", err);
+//       toast.error(err?.message || "Could not download certificate", { id: toastId });
+//     } finally {
+//       setCertDownloading(false);
+//     }
+//   };
+
 //   const selectLesson = (lesson: LessonItem) => {
+//     const lessonIndex = allLessons.findIndex((l) => l.id === lesson.id);
+//     const previousLesson = lessonIndex > 0 ? allLessons[lessonIndex - 1] : null;
+
+//     if (lesson.type === "video" && previousLesson && previousLesson.type === "video") {
+//       const prevCompleted = completedIds.has(previousLesson.id);
+//       if (!prevCompleted) {
+//         toast.error("Please complete the previous video lesson first");
+//         return;
+//       }
+//     }
+
+//     if (lesson.type === "quiz" && previousLesson) {
+//       const section = course.sections.find((s) => s.items.some((i) => i.id === lesson.id));
+//       if (section) {
+//         const sectionItems = section.items;
+//         const lessonIndexInSection = sectionItems.findIndex((i) => i.id === lesson.id);
+//         const previousInSection =
+//           lessonIndexInSection > 0 ? sectionItems[lessonIndexInSection - 1] : null;
+
+//         if (previousInSection && !completedIds.has(previousInSection.id)) {
+//           toast.error("Please complete all previous lessons in this section first");
+//           return;
+//         }
+//       }
+//     }
+
 //     setActiveLesson(lesson);
+//     setIsPlaying(false);
+//     // NOTE: do NOT reset watchedVideoIds here — it persists per lesson
+//   };
+
+//   const goToNext = () => {
+//     if (!nextLesson) return;
+//     if (!isCurrentLessonCompleted) {
+//       toast.error("Please complete the current lesson before proceeding");
+//       return;
+//     }
+//     setActiveLesson(nextLesson);
 //     setIsPlaying(false);
 //   };
 
-//   const goTo = (lesson: LessonItem | null) => {
-//     if (!lesson) return;
-//     setActiveLesson(lesson);
+//   const goToPrev = () => {
+//     if (!prevLesson) return;
+//     setActiveLesson(prevLesson);
 //     setIsPlaying(false);
 //   };
 
@@ -1295,6 +1612,23 @@
 //       </div>
 //     );
 //   }
+
+//   const currentSection = course.sections.find((s) =>
+//     s.items.some((i) => i.id === activeLesson?.id)
+//   );
+
+//   const canAccessLesson = (lesson: LessonItem) => {
+//     if (!currentSection) return true;
+//     const sectionItems = currentSection.items;
+//     const lessonIndex = sectionItems.findIndex((i) => i.id === lesson.id);
+//     if (lessonIndex === 0) return true;
+//     for (let i = 0; i < lessonIndex; i++) {
+//       if (!completedIds.has(sectionItems[i].id)) return false;
+//     }
+//     return true;
+//   };
+
+//   const isLessonAccessible = activeLesson ? canAccessLesson(activeLesson) : true;
 
 //   return (
 //     <div className="fixed inset-0 bg-[#0f1117] text-slate-200 flex flex-col z-50 font-sans">
@@ -1345,6 +1679,23 @@
 //           </div>
 //         </div>
 
+//         {certificate && (
+//           <button
+//             onClick={handleDownloadCertificate}
+//             disabled={certDownloading}
+//             title="Download certificate"
+//             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[#c0dd97] hover:bg-[#27500a] disabled:opacity-60 transition-colors"
+//             style={{ background: "#3b6d11", border: "1px solid #639922" }}
+//           >
+//             {certDownloading ? (
+//               <Loader2 className="w-3.5 h-3.5 animate-spin" />
+//             ) : (
+//               <DownloadIcon />
+//             )}
+//             Certificate
+//           </button>
+//         )}
+
 //         <button
 //           onClick={onClose}
 //           className="p-2 text-slate-500 hover:text-slate-200 hover:bg-[#1e2230] rounded-lg transition-colors"
@@ -1368,7 +1719,6 @@
 //               </button>
 //             </div>
 
-//             {/* Stats row */}
 //             <div className="flex items-center gap-5 px-4 py-3 border-b border-[#1e2230]">
 //               <div className="text-center">
 //                 <p className="text-[18px] font-bold text-slate-100">{allLessons.length}</p>
@@ -1386,7 +1736,6 @@
 //               </div>
 //             </div>
 
-//             {/* Modules list */}
 //             <div className="flex-1 overflow-y-auto">
 //               {course.sections.map((section, idx) => (
 //                 <SidebarModule
@@ -1407,7 +1756,6 @@
 
 //         {/* ── Main Content ──────────────────────────────────────────────────── */}
 //         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto relative">
-//           {/* Sidebar re-open toggle */}
 //           {!sidebarOpen && (
 //             <button
 //               onClick={() => setSidebarOpen(true)}
@@ -1426,7 +1774,6 @@
 //             </button>
 //           )}
 
-//           {/* Breadcrumb */}
 //           {activeSection && (
 //             <div className="px-6 pt-4 pb-1 flex items-center gap-2 text-[12px] text-slate-500 flex-shrink-0">
 //               <span>{activeSection.title}</span>
@@ -1444,7 +1791,6 @@
 //             </div>
 //           )}
 
-//           {/* Title row */}
 //           <div className="px-6 pb-3 pt-1 flex-shrink-0 flex items-center justify-between gap-4">
 //             <div className="min-w-0">
 //               <h2 className="text-[1.25rem] font-bold text-slate-100 leading-tight truncate">
@@ -1455,6 +1801,11 @@
 //               )}
 //             </div>
 //             <div className="flex items-center gap-2 flex-shrink-0">
+//               {!isLessonAccessible && (
+//                 <span className="flex items-center gap-1.5 text-[12px] text-yellow-500 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1 rounded-full">
+//                   🔒 Complete previous lessons first
+//                 </span>
+//               )}
 //               {isCurrentLessonCompleted && (
 //                 <span className="flex items-center gap-1.5 text-[12px] text-[#c0dd97] bg-[#1a2a0f] border border-[#639922]/30 px-3 py-1 rounded-full">
 //                   <CheckMini /> Completed
@@ -1472,22 +1823,20 @@
 //                   <circle cx="10" cy="10" r="8" />
 //                   <path d="M10 6v4l3 3" strokeLinecap="round" />
 //                 </svg>
-//                 Complete lesson to track progress
+//                 {activeLesson?.type === "video"
+//                   ? "Watch and complete to proceed"
+//                   : "Complete to track progress"}
 //               </span>
 //             </div>
 //           </div>
 
-//           {/* ── Lesson Content ────────────────────────────────────────────── */}
 //           {activeLesson?.type === "quiz" ? (
 //             <QuizView
+//               key={activeLesson.id}
 //               lesson={activeLesson}
-//               quizAttempt={
-//                 activeLesson.quizId ? quizAttempts.get(activeLesson.quizId) : undefined
-//               }
+//               quizAttempt={getQuizAttemptFor(activeLesson)}
 //               onSubmitQuiz={handleQuizSubmit}
-//               onQuizComplete={(passed) => {
-//                 if (passed && activeLesson.quizId) toggleComplete(activeLesson.id, true);
-//               }}
+//               onQuizComplete={() => {}}
 //             />
 //           ) : activeLesson?.type === "doc" ? (
 //             <div className="mx-6 mb-6">
@@ -1498,16 +1847,46 @@
 //               <VideoPlayer
 //                 lesson={activeLesson}
 //                 isPlaying={isPlaying}
-//                 onTogglePlay={() => setIsPlaying((p) => !p)}
+//                 onTogglePlay={() => {
+//                   if (!isLessonAccessible) {
+//                     toast.error("Please complete all previous lessons in this section first");
+//                     return;
+//                   }
+//                   // ✅ Mark video as started the moment Play is pressed
+//                   if (!isPlaying && activeLesson) {
+//                     markVideoStarted(activeLesson.id);
+//                   }
+//                   setIsPlaying((p) => !p);
+//                 }}
+//                 onVideoEnded={handleVideoComplete}
+//                 onVideoProgress={(p) => {
+//                   // Any progress > 0 counts as "started"
+//                   if (p > 0 && activeLesson) markVideoStarted(activeLesson.id);
+//                 }}
+//                 isCompleted={isCurrentLessonCompleted}
 //               />
 //               <div className="bg-[#161b27] px-4 py-3">
 //                 <div className="h-1 bg-[#2d3448] rounded-full mb-3 overflow-hidden cursor-pointer">
-//                   <div className="h-full bg-[#639922] rounded-full" style={{ width: "0%" }} />
+//                   <div
+//                     className="h-full bg-[#639922] rounded-full"
+//                     style={{ width: isCurrentLessonCompleted ? "100%" : "0%" }}
+//                   />
 //                 </div>
 //                 <div className="flex items-center gap-3">
 //                   <button
-//                     onClick={() => setIsPlaying((p) => !p)}
+//                     onClick={() => {
+//                       if (!isLessonAccessible) {
+//                         toast.error("Please complete all previous lessons in this section first");
+//                         return;
+//                       }
+//                       // ✅ Same: mark as started on Play
+//                       if (!isPlaying && activeLesson) {
+//                         markVideoStarted(activeLesson.id);
+//                       }
+//                       setIsPlaying((p) => !p);
+//                     }}
 //                     className="text-slate-300 hover:text-white transition-colors"
+//                     disabled={!isLessonAccessible}
 //                   >
 //                     {isPlaying ? (
 //                       <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
@@ -1518,16 +1897,17 @@
 //                     )}
 //                   </button>
 //                   <button
-//                     onClick={() => goTo(prevLesson)}
-//                     disabled={!prevLesson}
+//                     onClick={goToPrev}
+//                     disabled={!prevLesson || !canAccessPrevLesson()}
 //                     className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
 //                   >
 //                     <PrevIcon />
 //                   </button>
 //                   <button
-//                     onClick={() => goTo(nextLesson)}
-//                     disabled={!nextLesson}
+//                     onClick={goToNext}
+//                     disabled={!nextLesson || !canAccessNextLesson()}
 //                     className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
+//                     title={!canAccessNextLesson() ? "Complete this lesson first" : ""}
 //                   >
 //                     <NextIcon />
 //                   </button>
@@ -1535,7 +1915,9 @@
 //                     <VolumeIcon />
 //                   </button>
 //                   <span className="text-[12px] text-slate-400 ml-1">
-//                     — / {activeLesson?.duration || "—"}
+//                     {isCurrentLessonCompleted
+//                       ? "✓ Completed"
+//                       : "— / " + (activeLesson?.duration || "—")}
 //                   </span>
 //                   <div className="flex-1" />
 //                   <button className="text-slate-400 hover:text-white transition-colors">
@@ -1546,10 +1928,9 @@
 //             </div>
 //           )}
 
-//           {/* ── Navigation Row ────────────────────────────────────────────── */}
 //           <div className="mx-6 mb-5 flex items-center justify-between gap-3 flex-shrink-0">
 //             <button
-//               onClick={() => goTo(prevLesson)}
+//               onClick={goToPrev}
 //               disabled={!prevLesson}
 //               className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#2d3448] bg-[#161b27] text-slate-400 text-[13px] font-medium hover:bg-[#1e2230] hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 //             >
@@ -1558,7 +1939,7 @@
 
 //             <div
 //               onClick={() => {
-//                 if (!isCurrentLessonCompleted && activeLesson && activeLesson.type !== "quiz") {
+//                 if (!isCurrentLessonCompleted && activeLesson) {
 //                   toggleComplete(activeLesson.id, true);
 //                 }
 //               }}
@@ -1575,11 +1956,13 @@
 //               <Checkbox
 //                 checked={isCurrentLessonCompleted}
 //                 onChange={(v) => {
-//                   if (!isCurrentLessonCompleted && activeLesson && activeLesson.type !== "quiz") {
+//                   if (!isCurrentLessonCompleted && activeLesson) {
 //                     toggleComplete(activeLesson.id, v);
 //                   }
 //                 }}
-//                 disabled={isCurrentLessonCompleted || activeLesson?.type === "quiz"}
+//                 disabled={
+//                   isCurrentLessonCompleted || activeLesson?.type === "quiz" || !isLessonAccessible
+//                 }
 //               />
 //               <span
 //                 className="text-[13px] font-semibold"
@@ -1589,18 +1972,15 @@
 //                   ? "Completed ✓"
 //                   : activeLesson?.type === "quiz"
 //                   ? "Complete Quiz First"
+//                   : activeLesson?.type === "video" && !isVideoWatched
+//                   ? "Watch Full Video First"
 //                   : "Mark as Complete"}
 //               </span>
 //             </div>
 
 //             <button
-//               onClick={() => {
-//                 if (!isCurrentLessonCompleted && activeLesson && activeLesson.type !== "quiz") {
-//                   toggleComplete(activeLesson.id, true);
-//                 }
-//                 goTo(nextLesson);
-//               }}
-//               disabled={!nextLesson}
+//               onClick={goToNext}
+//               disabled={!nextLesson || !canAccessNextLesson()}
 //               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3b6d11] hover:bg-[#27500a] border border-[#639922] text-[#c0dd97] text-[13px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
 //             >
 //               Next
@@ -1616,6 +1996,53 @@
 //               </svg>
 //             </button>
 //           </div>
+
+//           {/* Certificate banner — shown on every lesson once earned */}
+//           {certificate && (
+//             <div className="mx-6 mb-5 flex-shrink-0">
+//               <div
+//                 className="flex items-center justify-between gap-4 p-4 rounded-2xl border"
+//                 style={{
+//                   background:
+//                     "linear-gradient(90deg, rgba(99,153,34,0.14) 0%, rgba(99,153,34,0.04) 100%)",
+//                   borderColor: "rgba(99,153,34,0.45)",
+//                 }}
+//               >
+//                 <div className="flex items-center gap-3 min-w-0">
+//                   <div
+//                     className="flex-shrink-0 flex items-center justify-center rounded-xl"
+//                     style={{ width: 40, height: 40, background: "rgba(99,153,34,0.2)" }}
+//                   >
+//                     <AwardIcon />
+//                   </div>
+//                   <div className="min-w-0">
+//                     <p className="text-[13px] font-bold text-[#c0dd97]">
+//                       Course Completed 🎓
+//                     </p>
+//                     <p className="text-[12px] text-slate-400 truncate">
+//                       {certificate.certificateNumber
+//                         ? `Certificate No: ${certificate.certificateNumber}`
+//                         : "Your certificate is ready to download."}
+//                     </p>
+//                   </div>
+//                 </div>
+
+//                 <button
+//                   onClick={handleDownloadCertificate}
+//                   disabled={certDownloading}
+//                   className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#c0dd97] transition-colors hover:bg-[#27500a] disabled:opacity-60"
+//                   style={{ background: "#3b6d11", border: "1px solid #639922" }}
+//                 >
+//                   {certDownloading ? (
+//                     <Loader2 className="w-4 h-4 animate-spin" />
+//                   ) : (
+//                     <DownloadIcon />
+//                   )}
+//                   Download Certificate
+//                 </button>
+//               </div>
+//             </div>
+//           )}
 
 //           {/* ── Tabs ──────────────────────────────────────────────────────── */}
 //           <div className="mx-6 mb-8 flex-shrink-0">
@@ -1653,7 +2080,9 @@
 //                           .toUpperCase()}
 //                       </div>
 //                       <div>
-//                         <p className="text-[13px] font-semibold text-slate-100">{course.author}</p>
+//                         <p className="text-[13px] font-semibold text-slate-100">
+//                           {course.author}
+//                         </p>
 //                         {course.authorTitle && (
 //                           <p className="text-[12px] text-slate-400">{course.authorTitle}</p>
 //                         )}
@@ -1689,11 +2118,9 @@
 //     </div>
 //   );
 // }
-
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import { type ExamData } from "./ExamPlayer";
@@ -1763,8 +2190,40 @@ interface CourseData {
   sections: Section[];
 }
 
+type QuizAttempt = {
+  score: number;
+  isPassed: boolean;
+  answers?: Record<string, string>;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Icons (keeping all existing icons)
+// Certificate download helper (authenticated)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function downloadCertificateBlob(
+  certificateId: string,
+  certificateNumber?: string
+): Promise<void> {
+  const token = localStorage.getItem("token");
+  const res = await fetch(
+    `/api/students/certificate/${certificateId}/download?disposition=attachment`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `certificate-${certificateNumber ?? certificateId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Icons
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PlayCircleIcon({ size = 15 }: { size?: number }) {
@@ -1882,8 +2341,23 @@ function DownloadIcon() {
   );
 }
 
+function AwardIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="9" r="5" stroke="#c0dd97" strokeWidth="1.6" />
+      <path
+        d="M9 13.5L7 21l5-2.5L17 21l-2-7.5"
+        stroke="#c0dd97"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Checkbox Component
+// Checkbox
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Checkbox({
@@ -1918,7 +2392,7 @@ function Checkbox({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Module Progress Component
+// Module Progress
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ModuleProgress({
@@ -1942,16 +2416,10 @@ function ModuleProgress({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sidebar Mock Exam Entry Component
+// Sidebar Mock Exam Entry
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SidebarMockExamEntry({
-  exam,
-  onStart,
-}: {
-  exam: ExamData;
-  onStart: () => void;
-}) {
+function SidebarMockExamEntry({ exam, onStart }: { exam: ExamData; onStart: () => void }) {
   const allQCount =
     exam.sections?.length > 0
       ? exam.sections.reduce((s, sec) => s + (sec.questions?.length ?? 0), 0)
@@ -2014,7 +2482,7 @@ function SidebarMockExamEntry({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sidebar Module Component
+// Sidebar Module
 // ─────────────────────────────────────────────────────────────────────────────
 
 function SidebarModule({
@@ -2156,7 +2624,7 @@ function SidebarModule({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Quiz View Component (unchanged)
+// Quiz View
 // ─────────────────────────────────────────────────────────────────────────────
 
 function QuizView({
@@ -2166,7 +2634,7 @@ function QuizView({
   onSubmitQuiz,
 }: {
   lesson: LessonItem;
-  quizAttempt?: { score: number; isPassed: boolean };
+  quizAttempt?: QuizAttempt;
   onQuizComplete?: (passed: boolean) => void;
   onSubmitQuiz?: (
     quizId: string,
@@ -2175,10 +2643,23 @@ function QuizView({
     answers: Record<string, string>
   ) => Promise<void>;
 }) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // ✅ Hydrate from the saved attempt so reload → review shows real answers
+  const [answers, setAnswers] = useState<Record<string, string>>(
+    quizAttempt?.answers ?? {}
+  );
   const [submitted, setSubmitted] = useState(!!quizAttempt);
   const [submitting, setSubmitting] = useState(false);
   const [showResults, setShowResults] = useState(false);
+
+  // Re-sync if the attempt arrives asynchronously (e.g. after loadProgress)
+  useEffect(() => {
+    if (quizAttempt?.answers) {
+      setAnswers(quizAttempt.answers);
+    }
+    if (quizAttempt) {
+      setSubmitted(true);
+    }
+  }, [quizAttempt]);
 
   const questions = lesson.questions ?? [];
   const getQuestionPoints = (q: QuizQuestion) => q.points || 1;
@@ -2225,7 +2706,7 @@ function QuizView({
   };
 
   if (quizAttempt && submitted && !showResults) {
-    const percentage = (quizAttempt.score / totalPossible) * 100;
+    const percentage = totalPossible > 0 ? (quizAttempt.score / totalPossible) * 100 : 0;
     return (
       <div className="mx-6 mb-6">
         <div className="bg-[#161b27] border border-[#2d3448] rounded-2xl p-6">
@@ -2261,7 +2742,7 @@ function QuizView({
 
   if (submitted && showResults) {
     const { totalScore, results } = calculateScoreAndDetails();
-    const percentage = (totalScore / totalPossible) * 100;
+    const percentage = totalPossible > 0 ? (totalScore / totalPossible) * 100 : 0;
     const passed = percentage >= (lesson.passingMarks || 0);
 
     return (
@@ -2433,7 +2914,9 @@ function QuizView({
               <div className="w-32 h-1.5 bg-[#2d3448] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#639922] rounded-full transition-all duration-300"
-                  style={{ width: `${(answeredCount / questions.length) * 100}%` }}
+                  style={{
+                    width: `${questions.length ? (answeredCount / questions.length) * 100 : 0}%`,
+                  }}
                 />
               </div>
               <span className="text-[11px] text-slate-500">
@@ -2553,7 +3036,7 @@ function QuizView({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Video Player Component with completion tracking
+// Video Player
 // ─────────────────────────────────────────────────────────────────────────────
 
 function VideoPlayer({
@@ -2561,12 +3044,14 @@ function VideoPlayer({
   isPlaying,
   onTogglePlay,
   onVideoEnded,
+  onVideoProgress,
   isCompleted,
 }: {
   lesson: LessonItem | null;
   isPlaying: boolean;
   onTogglePlay: () => void;
   onVideoEnded?: () => void;
+  onVideoProgress?: (progress: number) => void;
   isCompleted?: boolean;
 }) {
   const [videoProgress, setVideoProgress] = useState(0);
@@ -2577,8 +3062,6 @@ function VideoPlayer({
 
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
     if (ytMatch) {
-      // For YouTube, we'll use a different approach - we can't easily track progress
-      // but we'll consider it "played" after 30 seconds of viewing
       return (
         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
           <iframe
@@ -2587,7 +3070,8 @@ function VideoPlayer({
             allow="autoplay; fullscreen"
             allowFullScreen
             onLoad={() => {
-              // After 30 seconds of video playing, consider it as "watched"
+              // Notify parent that playback started (for watch tracking)
+              onVideoProgress?.(1);
               setTimeout(() => {
                 if (onVideoEnded && !isCompleted) {
                   onVideoEnded();
@@ -2611,33 +3095,46 @@ function VideoPlayer({
             allow="autoplay; fullscreen; picture-in-picture"
             allowFullScreen
             frameBorder="0"
+            onLoad={() => {
+              onVideoProgress?.(1);
+              setTimeout(() => {
+                if (onVideoEnded && !isCompleted) {
+                  onVideoEnded();
+                }
+              }, 30000);
+            }}
           />
         </div>
       );
     }
 
- // Matches either:
-//  - https://play.gumlet.io/embed/{id}
-//  - https://gumlet.tv/watch/{id}/  (or without trailing slash)
-const gumletMatch = url.match(
-  /(?:play\.gumlet\.io\/embed\/|gumlet\.tv\/watch\/)([a-zA-Z0-9]+)/
-);
+    const gumletMatch = url.match(
+      /(?:play\.gumlet\.io\/embed\/|gumlet\.tv\/watch\/)([a-zA-Z0-9]+)/
+    );
 
-if (gumletMatch) {
-  const videoId = gumletMatch[1];
-  return (
-    <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-      <iframe
-        src={`https://play.gumlet.io/embed/${videoId}?autoplay=1`}
-        className="absolute inset-0 w-full h-full"
-        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write"
-        allowFullScreen
-        frameBorder="0"
-        referrerPolicy="origin"
-      />
-    </div>
-  );
-}
+    if (gumletMatch) {
+      const videoId = gumletMatch[1];
+      return (
+        <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+          <iframe
+            src={`https://play.gumlet.io/embed/${videoId}?autoplay=1`}
+            className="absolute inset-0 w-full h-full"
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write"
+            allowFullScreen
+            frameBorder="0"
+            referrerPolicy="origin"
+            onLoad={() => {
+              onVideoProgress?.(1);
+              setTimeout(() => {
+                if (onVideoEnded && !isCompleted) {
+                  onVideoEnded();
+                }
+              }, 30000);
+            }}
+          />
+        </div>
+      );
+    }
 
     if (url.match(/\.(mp4|webm|ogg)$/i)) {
       return (
@@ -2651,8 +3148,8 @@ if (gumletMatch) {
               const video = e.currentTarget;
               const progress = (video.currentTime / video.duration) * 100;
               setVideoProgress(progress);
-              
-              // If video reaches 90% or more, consider it as watched
+              onVideoProgress?.(progress);
+
               if (progress >= 90 && !hasReachedEnd && onVideoEnded && !isCompleted) {
                 setHasReachedEnd(true);
                 onVideoEnded();
@@ -2664,9 +3161,8 @@ if (gumletMatch) {
               }
             }}
           />
-          {/* Video progress indicator */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#2d3448]">
-            <div 
+            <div
               className="h-full bg-[#639922] transition-all duration-300"
               style={{ width: `${videoProgress}%` }}
             />
@@ -2715,7 +3211,7 @@ if (gumletMatch) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PDF Viewer Component (unchanged)
+// PDF Viewer
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PDFView({ lesson, onClose }: { lesson: LessonItem; onClose?: () => void }) {
@@ -2859,7 +3355,7 @@ function PDFView({ lesson, onClose }: { lesson: LessonItem; onClose?: () => void
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main CoursePlayer Component
+// Main CoursePlayer
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CoursePlayer({
@@ -2877,10 +3373,14 @@ export default function CoursePlayer({
 
   const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [quizAttempts, setQuizAttempts] = useState<
-    Map<string, { score: number; isPassed: boolean }>
-  >(new Map());
+  const [quizAttempts, setQuizAttempts] = useState<Map<string, QuizAttempt>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [certificate, setCertificate] = useState<{
+    id: string;
+    certificateNumber?: string;
+  } | null>(null);
+  const [certDownloading, setCertDownloading] = useState(false);
+  const startedRef = useRef(false);
 
   const allLessons: LessonItem[] = (course.sections ?? []).flatMap((s) => s.items);
   const defaultLesson = allLessons.find((i) => i.active) ?? allLessons[0] ?? null;
@@ -2891,7 +3391,9 @@ export default function CoursePlayer({
   const [activeTab, setActiveTab] = useState<"Overview" | "Attachment" | "Notes" | "Rating">(
     "Overview"
   );
-  const [isVideoWatched, setIsVideoWatched] = useState(false);
+
+  // ✅ Watched videos tracked per lesson id (survives lesson switching)
+  const [watchedVideoIds, setWatchedVideoIds] = useState<Set<string>>(new Set());
 
   const currentIdx = allLessons.findIndex((l) => l.id === activeLesson?.id);
   const prevLesson = currentIdx > 0 ? allLessons[currentIdx - 1] : null;
@@ -2902,30 +3404,28 @@ export default function CoursePlayer({
     allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
 
   const isCurrentLessonCompleted = !!activeLesson && completedIds.has(activeLesson.id);
+  const isVideoWatched = !!activeLesson && watchedVideoIds.has(activeLesson.id);
 
-  // Check if next lesson can be accessed
+  /**
+   * Resolve a quiz attempt for a lesson, checking BOTH possible keys
+   * (quizId and moduleId) since the API sets both.
+   */
+  const getQuizAttemptFor = (lesson: LessonItem | null): QuizAttempt | undefined => {
+    if (!lesson?.quizId) return undefined;
+    return quizAttempts.get(lesson.quizId);
+  };
+
   const canAccessNextLesson = () => {
     if (!activeLesson) return false;
-    // For videos: must be completed
-    if (activeLesson.type === "video") {
-      return isCurrentLessonCompleted;
-    }
-    // For docs: can be accessed anytime (or you can enforce completion)
-    if (activeLesson.type === "doc") {
-      return true;
-    }
-    // For quizzes: must be passed
-    if (activeLesson.type === "quiz" && activeLesson.quizId) {
-      const attempt = quizAttempts.get(activeLesson.quizId);
-      return attempt?.isPassed === true;
+    if (activeLesson.type === "video") return isCurrentLessonCompleted;
+    if (activeLesson.type === "doc") return true;
+    if (activeLesson.type === "quiz") {
+      return !!getQuizAttemptFor(activeLesson);
     }
     return true;
   };
 
-  // Check if previous lesson can be accessed (always allow going back)
-  const canAccessPrevLesson = () => {
-    return true;
-  };
+  const canAccessPrevLesson = () => true;
 
   useEffect(() => {
     loadProgress();
@@ -2941,19 +3441,50 @@ export default function CoursePlayer({
       const json = await res.json();
 
       if (json.status && json.data) {
-        setCompletedIds(new Set(json.data.completedLessonIds || []));
-
-        const attempts = new Map<string, { score: number; isPassed: boolean }>();
-        json.data.quizAttempts?.forEach((attempt: any) => {
-          attempts.set(attempt.quizId, { score: attempt.score, isPassed: attempt.isPassed });
+        // Key by BOTH quizId and moduleId, and carry answers through
+        const attempts = new Map<string, QuizAttempt>();
+        json.data.quizAttempts?.forEach((a: any) => {
+          const v: QuizAttempt = {
+            score: a.score,
+            isPassed: a.isPassed,
+            answers: a.answers ?? {},
+          };
+          if (a.quizId) attempts.set(a.quizId, v);
+          if (a.moduleId) attempts.set(a.moduleId, v);
         });
         setQuizAttempts(attempts);
 
+        // Reconstruct completed set (lessons + any attempted quiz)
+        const passedQuizItemIds = allLessons
+          .filter((l) => l.type === "quiz" && l.quizId && attempts.has(l.quizId))
+          .map((l) => l.id);
+
+        setCompletedIds(
+          new Set([...(json.data.completedLessonIds || []), ...passedQuizItemIds])
+        );
+
+        // If a video lesson is already completed, treat it as watched too
+        const alreadyWatched = new Set<string>();
+        (json.data.completedLessonIds || []).forEach((id: string) => {
+          const lesson = allLessons.find((l) => l.id === id);
+          if (lesson?.type === "video") alreadyWatched.add(id);
+        });
+        setWatchedVideoIds(alreadyWatched);
+
         if (json.data.enrollment) {
           setEnrollmentStatus(json.data.enrollment.status);
-          if (json.data.enrollment.status === "Pending") {
+          // Only auto-start once
+          if (json.data.enrollment.status === "Pending" && !startedRef.current) {
+            startedRef.current = true;
             await startCourse();
+            toast.success("Course started! Good luck with your learning.");
           }
+        }
+        if (json.data.certificate) {
+          setCertificate({
+            id: json.data.certificate.id,
+            certificateNumber: json.data.certificate.certificateNumber,
+          });
         }
       }
     } catch (error) {
@@ -2973,18 +3504,55 @@ export default function CoursePlayer({
         body: JSON.stringify({ courseId: course.id, action: "start" }),
       });
       setEnrollmentStatus("InProcess");
-      toast.success("Course started! Good luck with your learning.");
     } catch (error) {
       console.error("Failed to start course:", error);
     }
   };
 
+  /**
+   * Mark the currently active video as "started" so the manual checkbox
+   * can complete it. Called the moment the user presses Play.
+   */
+  const markVideoStarted = (lessonId?: string) => {
+    const id = lessonId ?? activeLesson?.id;
+    if (!id) return;
+    setWatchedVideoIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+
+  /**
+   * Single choke point for marking complete.
+   * Guard lives here so the sidebar checkbox can't bypass it.
+   */
   const toggleComplete = async (id: string, val: boolean) => {
     if (!val && completedIds.has(id)) {
       toast.error("Cannot unmark a completed lesson");
       return;
     }
     if (val && !completedIds.has(id)) {
+      const lesson = allLessons.find((l) => l.id === id);
+      if (!lesson) return;
+
+      // Video: must have been started (marked watched)
+      if (lesson.type === "video") {
+        if (!watchedVideoIds.has(id)) {
+          toast.error("Please watch the full video before marking as complete");
+          return;
+        }
+      }
+
+      // Quiz: must have a recorded attempt
+      if (lesson.type === "quiz") {
+        if (!getQuizAttemptFor(lesson)) {
+          toast.error("Complete the quiz to mark as complete");
+          return;
+        }
+      }
+
       try {
         const token = localStorage.getItem("token");
         const res = await fetch("/api/courses/progress", {
@@ -3000,6 +3568,15 @@ export default function CoursePlayer({
             setEnrollmentStatus("Complete");
             toast.success("Congratulations! You've completed the course! 🎓");
           }
+          if (json.certificateIssued && json.certificateId) {
+            setCertificate({
+              id: json.certificateId,
+              certificateNumber: json.certificateNumber ?? undefined,
+            });
+          }
+          if (json.certificateError) {
+            toast.error(json.certificateError);
+          }
         } else {
           toast.error(json.message || "Failed to complete lesson");
         }
@@ -3011,11 +3588,10 @@ export default function CoursePlayer({
   };
 
   const handleVideoComplete = async () => {
-    // This will be called when video is fully watched
-    if (activeLesson && !isCurrentLessonCompleted) {
+    if (!activeLesson) return;
+    markVideoStarted(activeLesson.id);
+    if (!isCurrentLessonCompleted) {
       await toggleComplete(activeLesson.id, true);
-      setIsVideoWatched(true);
-      toast.success("Video completed! 🎉");
     }
   };
 
@@ -3030,21 +3606,40 @@ export default function CoursePlayer({
       const res = await fetch("/api/courses/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          courseId: course.id,
-          quizId,
-          score,
-          passed,
-          answers,
-          action: "submit_quiz",
-        }),
+        body: JSON.stringify({ courseId: course.id, quizId, answers, action: "submit_quiz" }),
       });
       const json = await res.json();
+
       if (json.status) {
-        setQuizAttempts((prev) => new Map(prev).set(quizId, { score, isPassed: passed }));
+        const result: QuizAttempt = {
+          score: json.score ?? score,
+          isPassed: json.isPassed ?? passed,
+          answers: json.answers ?? answers,
+        };
+        setQuizAttempts((prev) => {
+          const m = new Map(prev);
+          m.set(quizId, result);
+          if (json.moduleId) m.set(json.moduleId, result);
+          return m;
+        });
         toast.success(json.message);
-        if (passed && activeLesson && activeLesson.quizId === quizId) {
-          await toggleComplete(activeLesson.id, true);
+
+        if (activeLesson) {
+          setCompletedIds((prev) => new Set(prev).add(activeLesson.id));
+        }
+
+        if (json.certificateIssued) {
+          setEnrollmentStatus("Complete");
+          toast.success("Congratulations! You've completed the course! 🎓");
+          if (json.certificateId) {
+            setCertificate({
+              id: json.certificateId,
+              certificateNumber: json.certificateNumber ?? undefined,
+            });
+          }
+        }
+        if (json.certificateError) {
+          toast.error(json.certificateError);
         }
       } else {
         toast.error(json.message || "Failed to submit quiz");
@@ -3055,12 +3650,28 @@ export default function CoursePlayer({
     }
   };
 
+  const handleDownloadCertificate = async () => {
+    if (!certificate?.id) {
+      toast.error("Certificate not available yet");
+      return;
+    }
+    setCertDownloading(true);
+    const toastId = toast.loading("Preparing your certificate…");
+    try {
+      await downloadCertificateBlob(certificate.id, certificate.certificateNumber);
+      toast.success("Certificate downloaded! 🎓", { id: toastId });
+    } catch (err: any) {
+      console.error("Certificate download failed:", err);
+      toast.error(err?.message || "Could not download certificate", { id: toastId });
+    } finally {
+      setCertDownloading(false);
+    }
+  };
+
   const selectLesson = (lesson: LessonItem) => {
-    // Check if this is a lesson that requires previous completion
-    const lessonIndex = allLessons.findIndex(l => l.id === lesson.id);
+    const lessonIndex = allLessons.findIndex((l) => l.id === lesson.id);
     const previousLesson = lessonIndex > 0 ? allLessons[lessonIndex - 1] : null;
-    
-    // If it's a video lesson (not the first) and previous is a video that's not completed
+
     if (lesson.type === "video" && previousLesson && previousLesson.type === "video") {
       const prevCompleted = completedIds.has(previousLesson.id);
       if (!prevCompleted) {
@@ -3068,56 +3679,41 @@ export default function CoursePlayer({
         return;
       }
     }
-    
-    // If it's a quiz lesson, check if previous lessons are completed
+
     if (lesson.type === "quiz" && previousLesson) {
-      // Check if all previous lessons in this section are completed
-      const section = course.sections.find(s => s.items.some(i => i.id === lesson.id));
+      const section = course.sections.find((s) => s.items.some((i) => i.id === lesson.id));
       if (section) {
         const sectionItems = section.items;
-        const lessonIndexInSection = sectionItems.findIndex(i => i.id === lesson.id);
-        const previousInSection = lessonIndexInSection > 0 ? sectionItems[lessonIndexInSection - 1] : null;
-        
+        const lessonIndexInSection = sectionItems.findIndex((i) => i.id === lesson.id);
+        const previousInSection =
+          lessonIndexInSection > 0 ? sectionItems[lessonIndexInSection - 1] : null;
+
         if (previousInSection && !completedIds.has(previousInSection.id)) {
           toast.error("Please complete all previous lessons in this section first");
           return;
         }
       }
     }
-    
+
     setActiveLesson(lesson);
     setIsPlaying(false);
-    setIsVideoWatched(false);
+    // NOTE: do NOT reset watchedVideoIds here — it persists per lesson
   };
 
   const goToNext = () => {
     if (!nextLesson) return;
-    
-    // Check if current lesson is completed before allowing to proceed
     if (!isCurrentLessonCompleted) {
       toast.error("Please complete the current lesson before proceeding");
       return;
     }
-    
-    // Check if next lesson is accessible (video or quiz)
-    if (nextLesson.type === "video" || nextLesson.type === "quiz") {
-      // For video lessons, they should be accessible if previous is completed
-      // For quiz lessons, they should be accessible if previous lessons are completed
-      setActiveLesson(nextLesson);
-      setIsPlaying(false);
-      setIsVideoWatched(false);
-    } else {
-      setActiveLesson(nextLesson);
-      setIsPlaying(false);
-      setIsVideoWatched(false);
-    }
+    setActiveLesson(nextLesson);
+    setIsPlaying(false);
   };
 
   const goToPrev = () => {
     if (!prevLesson) return;
     setActiveLesson(prevLesson);
     setIsPlaying(false);
-    setIsVideoWatched(false);
   };
 
   const activeSection = course.sections.find((s) =>
@@ -3135,25 +3731,17 @@ export default function CoursePlayer({
     );
   }
 
-  // Get the current section's items to determine if user can access this lesson
-  const currentSection = course.sections.find(s => 
-    s.items.some(i => i.id === activeLesson?.id)
+  const currentSection = course.sections.find((s) =>
+    s.items.some((i) => i.id === activeLesson?.id)
   );
-  
-  // Check if user can access this lesson based on section progression
+
   const canAccessLesson = (lesson: LessonItem) => {
     if (!currentSection) return true;
     const sectionItems = currentSection.items;
-    const lessonIndex = sectionItems.findIndex(i => i.id === lesson.id);
-    
-    // First lesson in section - always accessible
+    const lessonIndex = sectionItems.findIndex((i) => i.id === lesson.id);
     if (lessonIndex === 0) return true;
-    
-    // Check if all previous lessons in this section are completed
     for (let i = 0; i < lessonIndex; i++) {
-      if (!completedIds.has(sectionItems[i].id)) {
-        return false;
-      }
+      if (!completedIds.has(sectionItems[i].id)) return false;
     }
     return true;
   };
@@ -3209,6 +3797,23 @@ export default function CoursePlayer({
           </div>
         </div>
 
+        {certificate && (
+          <button
+            onClick={handleDownloadCertificate}
+            disabled={certDownloading}
+            title="Download certificate"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[#c0dd97] hover:bg-[#27500a] disabled:opacity-60 transition-colors"
+            style={{ background: "#3b6d11", border: "1px solid #639922" }}
+          >
+            {certDownloading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <DownloadIcon />
+            )}
+            Certificate
+          </button>
+        )}
+
         <button
           onClick={onClose}
           className="p-2 text-slate-500 hover:text-slate-200 hover:bg-[#1e2230] rounded-lg transition-colors"
@@ -3232,7 +3837,6 @@ export default function CoursePlayer({
               </button>
             </div>
 
-            {/* Stats row */}
             <div className="flex items-center gap-5 px-4 py-3 border-b border-[#1e2230]">
               <div className="text-center">
                 <p className="text-[18px] font-bold text-slate-100">{allLessons.length}</p>
@@ -3250,7 +3854,6 @@ export default function CoursePlayer({
               </div>
             </div>
 
-            {/* Modules list */}
             <div className="flex-1 overflow-y-auto">
               {course.sections.map((section, idx) => (
                 <SidebarModule
@@ -3271,7 +3874,6 @@ export default function CoursePlayer({
 
         {/* ── Main Content ──────────────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto relative">
-          {/* Sidebar re-open toggle */}
           {!sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(true)}
@@ -3290,7 +3892,6 @@ export default function CoursePlayer({
             </button>
           )}
 
-          {/* Breadcrumb */}
           {activeSection && (
             <div className="px-6 pt-4 pb-1 flex items-center gap-2 text-[12px] text-slate-500 flex-shrink-0">
               <span>{activeSection.title}</span>
@@ -3308,7 +3909,6 @@ export default function CoursePlayer({
             </div>
           )}
 
-          {/* Title row */}
           <div className="px-6 pb-3 pt-1 flex-shrink-0 flex items-center justify-between gap-4">
             <div className="min-w-0">
               <h2 className="text-[1.25rem] font-bold text-slate-100 leading-tight truncate">
@@ -3341,22 +3941,20 @@ export default function CoursePlayer({
                   <circle cx="10" cy="10" r="8" />
                   <path d="M10 6v4l3 3" strokeLinecap="round" />
                 </svg>
-                {activeLesson?.type === "video" ? "Watch and complete to proceed" : "Complete to track progress"}
+                {activeLesson?.type === "video"
+                  ? "Watch and complete to proceed"
+                  : "Complete to track progress"}
               </span>
             </div>
           </div>
 
-          {/* ── Lesson Content ────────────────────────────────────────────── */}
           {activeLesson?.type === "quiz" ? (
             <QuizView
+              key={activeLesson.id}
               lesson={activeLesson}
-              quizAttempt={
-                activeLesson.quizId ? quizAttempts.get(activeLesson.quizId) : undefined
-              }
+              quizAttempt={getQuizAttemptFor(activeLesson)}
               onSubmitQuiz={handleQuizSubmit}
-              onQuizComplete={(passed) => {
-                if (passed && activeLesson.quizId) toggleComplete(activeLesson.id, true);
-              }}
+              onQuizComplete={() => {}}
             />
           ) : activeLesson?.type === "doc" ? (
             <div className="mx-6 mb-6">
@@ -3372,14 +3970,25 @@ export default function CoursePlayer({
                     toast.error("Please complete all previous lessons in this section first");
                     return;
                   }
+                  // ✅ Mark video as started the moment Play is pressed
+                  if (!isPlaying && activeLesson) {
+                    markVideoStarted(activeLesson.id);
+                  }
                   setIsPlaying((p) => !p);
                 }}
                 onVideoEnded={handleVideoComplete}
+                onVideoProgress={(p) => {
+                  // Any progress > 0 counts as "started"
+                  if (p > 0 && activeLesson) markVideoStarted(activeLesson.id);
+                }}
                 isCompleted={isCurrentLessonCompleted}
               />
               <div className="bg-[#161b27] px-4 py-3">
                 <div className="h-1 bg-[#2d3448] rounded-full mb-3 overflow-hidden cursor-pointer">
-                  <div className="h-full bg-[#639922] rounded-full" style={{ width: isCurrentLessonCompleted ? "100%" : "0%" }} />
+                  <div
+                    className="h-full bg-[#639922] rounded-full"
+                    style={{ width: isCurrentLessonCompleted ? "100%" : "0%" }}
+                  />
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -3387,6 +3996,10 @@ export default function CoursePlayer({
                       if (!isLessonAccessible) {
                         toast.error("Please complete all previous lessons in this section first");
                         return;
+                      }
+                      // ✅ Same: mark as started on Play
+                      if (!isPlaying && activeLesson) {
+                        markVideoStarted(activeLesson.id);
                       }
                       setIsPlaying((p) => !p);
                     }}
@@ -3420,7 +4033,9 @@ export default function CoursePlayer({
                     <VolumeIcon />
                   </button>
                   <span className="text-[12px] text-slate-400 ml-1">
-                    {isCurrentLessonCompleted ? "✓ Completed" : "— / " + (activeLesson?.duration || "—")}
+                    {isCurrentLessonCompleted
+                      ? "✓ Completed"
+                      : "— / " + (activeLesson?.duration || "—")}
                   </span>
                   <div className="flex-1" />
                   <button className="text-slate-400 hover:text-white transition-colors">
@@ -3431,7 +4046,6 @@ export default function CoursePlayer({
             </div>
           )}
 
-          {/* ── Navigation Row ────────────────────────────────────────────── */}
           <div className="mx-6 mb-5 flex items-center justify-between gap-3 flex-shrink-0">
             <button
               onClick={goToPrev}
@@ -3444,14 +4058,6 @@ export default function CoursePlayer({
             <div
               onClick={() => {
                 if (!isCurrentLessonCompleted && activeLesson) {
-                  if (activeLesson.type === "video" && !isVideoWatched) {
-                    toast.error("Please watch the full video before marking as complete");
-                    return;
-                  }
-                  if (activeLesson.type === "quiz") {
-                    toast.error("Complete the quiz to mark as complete");
-                    return;
-                  }
                   toggleComplete(activeLesson.id, true);
                 }
               }}
@@ -3469,18 +4075,12 @@ export default function CoursePlayer({
                 checked={isCurrentLessonCompleted}
                 onChange={(v) => {
                   if (!isCurrentLessonCompleted && activeLesson) {
-                    if (activeLesson.type === "video" && !isVideoWatched) {
-                      toast.error("Please watch the full video before marking as complete");
-                      return;
-                    }
-                    if (activeLesson.type === "quiz") {
-                      toast.error("Complete the quiz to mark as complete");
-                      return;
-                    }
                     toggleComplete(activeLesson.id, v);
                   }
                 }}
-                disabled={isCurrentLessonCompleted || activeLesson?.type === "quiz" || !isLessonAccessible}
+                disabled={
+                  isCurrentLessonCompleted || activeLesson?.type === "quiz" || !isLessonAccessible
+                }
               />
               <span
                 className="text-[13px] font-semibold"
@@ -3514,6 +4114,53 @@ export default function CoursePlayer({
               </svg>
             </button>
           </div>
+
+          {/* Certificate banner — shown on every lesson once earned */}
+          {certificate && (
+            <div className="mx-6 mb-5 flex-shrink-0">
+              <div
+                className="flex items-center justify-between gap-4 p-4 rounded-2xl border"
+                style={{
+                  background:
+                    "linear-gradient(90deg, rgba(99,153,34,0.14) 0%, rgba(99,153,34,0.04) 100%)",
+                  borderColor: "rgba(99,153,34,0.45)",
+                }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className="flex-shrink-0 flex items-center justify-center rounded-xl"
+                    style={{ width: 40, height: 40, background: "rgba(99,153,34,0.2)" }}
+                  >
+                    <AwardIcon />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold text-[#c0dd97]">
+                      Course Completed 🎓
+                    </p>
+                    <p className="text-[12px] text-slate-400 truncate">
+                      {certificate.certificateNumber
+                        ? `Certificate No: ${certificate.certificateNumber}`
+                        : "Your certificate is ready to download."}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleDownloadCertificate}
+                  disabled={certDownloading}
+                  className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#c0dd97] transition-colors hover:bg-[#27500a] disabled:opacity-60"
+                  style={{ background: "#3b6d11", border: "1px solid #639922" }}
+                >
+                  {certDownloading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <DownloadIcon />
+                  )}
+                  Download Certificate
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ── Tabs ──────────────────────────────────────────────────────── */}
           <div className="mx-6 mb-8 flex-shrink-0">
@@ -3551,7 +4198,9 @@ export default function CoursePlayer({
                           .toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-[13px] font-semibold text-slate-100">{course.author}</p>
+                        <p className="text-[13px] font-semibold text-slate-100">
+                          {course.author}
+                        </p>
                         {course.authorTitle && (
                           <p className="text-[12px] text-slate-400">{course.authorTitle}</p>
                         )}

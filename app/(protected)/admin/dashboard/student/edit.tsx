@@ -1,5 +1,7 @@
+
+
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 const SECTIONS = ["A", "B", "C", "D"];
@@ -44,6 +46,26 @@ function generatePassword(length = 10) {
 
 function gpaColor(g: number) { return g >= 9 ? "#34d399" : g >= 7 ? "#fbbf24" : "#f87171"; }
 function attColor(a: number) { return a >= 90 ? "#34d399" : a >= 75 ? "#fbbf24" : "#f87171"; }
+
+// Normalizes whatever shape /api/schools returns into { value, label } options.
+// Handles: raw array, { data: [...] }, { schools: [...] }, and school objects
+// keyed as id/_id/schoolId and name/schoolName/label.
+function normalizeSchools(json: any): SelOption[] {
+  const list: any[] = Array.isArray(json)
+    ? json
+    : json?.data ?? json?.schools ?? json?.result ?? [];
+
+  if (!Array.isArray(list)) return [];
+
+  return list
+    .map((s: any) => {
+      const value = s?.id ?? s?._id ?? s?.schoolId ?? s?.value;
+      const label = s?.name ?? s?.schoolName ?? s?.label;
+      if (value === undefined || value === null) return null;
+      return { value: String(value), label: label ? String(label) : String(value) };
+    })
+    .filter((o): o is SelOption => o !== null);
+}
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 const Ic = {
@@ -93,20 +115,22 @@ function Field({ label, icon, required, error, children, hint }: FieldProps) {
   );
 }
 
-interface SelOption { value: string | number; label: string; }
+interface SelOption { value: string; label: string; }
 
-function Sel({ value, onChange, options, placeholder }: {
+function Sel({ value, onChange, options, placeholder, disabled }: {
   value: string;
   onChange: (v: string) => void;
   options: (string | SelOption)[];
   placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
     <div style={{ position: "relative" }}>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        style={{ width: "100%", padding: "0.65rem 2rem 0.65rem 0.9rem", background: "#0f1117", border: "1px solid #2d3448", borderRadius: 9, color: value ? "#e2e8f0" : "#3a4460", fontSize: "0.875rem", outline: "none", cursor: "pointer", appearance: "none", fontFamily: "inherit" }}
+        disabled={disabled}
+        style={{ width: "100%", padding: "0.65rem 2rem 0.65rem 0.9rem", background: "#0f1117", border: "1px solid #2d3448", borderRadius: 9, color: value ? "#e2e8f0" : "#3a4460", fontSize: "0.875rem", outline: "none", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.6 : 1, appearance: "none", fontFamily: "inherit" }}
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map(o => {
@@ -203,7 +227,8 @@ interface EditModalProps {
   onClose: () => void;
   loading: boolean;
   gradeOptions: SelOption[];
-  schoolOptions: SelOption[];
+  // Now optional: if not provided (or empty), the modal fetches schools from /api/schools itself.
+  schoolOptions?: SelOption[];
 }
 
 // ─── Form Modal (Edit mode) ──────────────────────────────────────────────────
@@ -214,12 +239,64 @@ export default function EditModal({
   onClose,
   loading,
   gradeOptions,
-  schoolOptions,
+  schoolOptions: schoolOptionsProp,
 }: EditModalProps) {
   // ✅ Fix: typed as Record<string, string> so dynamic key deletion is allowed
   const [errors, setErrors]  = useState<Record<string, string>>({});
   const [showPw, setShowPw] = useState(false);
   const [showCp, setShowCp] = useState(false);
+
+  // ── Schools fetched from the API ────────────────────────────────────────
+  const [schoolOptions, setSchoolOptions] = useState<SelOption[]>(schoolOptionsProp ?? []);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [schoolsError, setSchoolsError] = useState<string>("");
+
+  useEffect(() => {
+    // If a non-empty list is passed in as a prop, trust it and skip fetching.
+    if (schoolOptionsProp && schoolOptionsProp.length > 0) {
+      setSchoolOptions(schoolOptionsProp);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchSchools() {
+      setSchoolsLoading(true);
+      setSchoolsError("");
+      try {
+        const res = await fetch("/api/schools", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to load schools (${res.status})`);
+        }
+
+        const json = await res.json();
+        const opts = normalizeSchools(json);
+
+        if (!cancelled) {
+          setSchoolOptions(opts);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setSchoolsError(err?.message || "Failed to load schools");
+        }
+      } finally {
+        if (!cancelled) {
+          setSchoolsLoading(false);
+        }
+      }
+    }
+
+    fetchSchools();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const strength = pwStrength(formData.password);
 
@@ -322,7 +399,12 @@ export default function EditModal({
             </Field>
           </div>
 
-          <Field label="School" icon={<Ic.Building />} required error={errors.schoolId}>
+          <Field
+            label="School"
+            icon={<Ic.Building />}
+            required
+            error={errors.schoolId || schoolsError}
+          >
             <Sel
               value={formData.schoolId}
               onChange={v => {
@@ -331,7 +413,14 @@ export default function EditModal({
                 setErrors(p => { const n = { ...p }; delete n["schoolId"]; return n; });
               }}
               options={schoolOptions}
-              placeholder="Select School"
+              placeholder={
+                schoolsLoading
+                  ? "Loading schools…"
+                  : schoolOptions.length === 0
+                  ? "No schools available"
+                  : "Select School"
+              }
+              disabled={schoolsLoading}
             />
           </Field>
 

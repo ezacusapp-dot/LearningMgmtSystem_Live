@@ -126,8 +126,11 @@ function dtoToDisplay(s: any): Student {
     gradeId: s.standard || "",
     grade: s.standard || "",
     section: s.batch || "A",
-    school: s.school || s.schoolName || "",
-    schoolId: s.schoolId || "",
+   school:
+      typeof s.school === "string"
+        ? s.school
+        : s.school?.name || s.schoolName || "",
+    schoolId: s.schoolId || s.school?.id || "",
     parentName: s.parentName || "",
     parentPhone: s.parentMobile || "",
     parentEmail: s.parentEmail || "",
@@ -167,17 +170,29 @@ const defaultForm: FormData = {
 
 // ─── API Layer ────────────────────────────────────────────────────────────────
 const API = {
-  async getStudents(params: StudentQueryParams = {}) {
-    const q = new URLSearchParams();
-    if (params.page) q.set("page", String(params.page));
-    if (params.limit) q.set("limit", String(params.limit));
-    if (params.search) q.set("search", params.search);
-    if (params.grade && params.grade !== "All Grades") q.set("grade", params.grade);
-    const res = await fetch(`/api/students?${q}`);
-    if (!res.ok) throw new Error("Failed to fetch students");
-    return res.json();
-  },
+  // async getStudents(params: StudentQueryParams = {}) {
+  //   const q = new URLSearchParams();
+  //   if (params.page) q.set("page", String(params.page));
+  //   if (params.limit) q.set("limit", String(params.limit));
+  //   if (params.search) q.set("search", params.search);
+  //   if (params.grade && params.grade !== "All Grades") q.set("grade", params.grade);
+  //   const res = await fetch(`/api/students?${q}`);
+  //   if (!res.ok) throw new Error("Failed to fetch students");
+  //   return res.json();
+  // },
+async getStudents(params: StudentQueryParams = {}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.search) q.set("search", params.search);
+  if (params.grade && params.grade !== "All Grades") q.set("grade", params.grade);
 
+  const res = await fetch(`/api/admin/students?${q}`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch students");
+  return res.json();
+},
   async getGrades() {
     const res = await fetch("/api/grade");
     if (!res.ok) throw new Error("Failed to fetch grades");
@@ -190,36 +205,69 @@ const API = {
     return res.json();
   },
 
+  // async createStudent(data: any) {
+  //   const res = await fetch("/api/students", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify(data),
+  //   });
+  //   const json = await res.json();
+  //   if (!json.success) throw new Error(json.message || "Failed to create student");
+  //   return json.data;
+  // },
   async createStudent(data: any) {
-    const res = await fetch("/api/students", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.message || "Failed to create student");
-    return json.data;
-  },
+  const res = await fetch("/api/admin/students", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || "Failed to create student");
+  return json.data;
+},
 
-  async updateStudent(id: string, data: any) {
-    const res = await fetch(`/api/students/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.message || "Failed to update student");
-    return json.data;
-  },
+//   async updateStudent(id: string, data: any) {
+//     const res = await fetch(`/api/students/${id}`, {
+//       method: "PUT",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(data),
+//     });
+//     const json = await res.json();
+//     if (!json.success) throw new Error(json.message || "Failed to update student");
+//     return json.data;
+//   },
 
-  async deleteStudent(id: string) {
-    const res = await fetch(`/api/students/${id}`, { method: "DELETE" });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.message || "Failed to delete student");
-    return json;
-  },
+//   async deleteStudent(id: string) {
+//     const res = await fetch(`/api/students/${id}`, { method: "DELETE" });
+//     const json = await res.json();
+//     if (!json.success) throw new Error(json.message || "Failed to delete student");
+//     return json;
+//   },
+// };
+
+async updateStudent(id: string, data: any) {
+  const res = await fetch(`/api/admin/students/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || "Failed to update student");
+  return json.data;
+},
+
+async deleteStudent(id: string) {
+  const res = await fetch(`/api/admin/students/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || "Failed to delete student");
+  return json;
+},
 };
-
 // ─── Icons ──────────────────────────────────────────────────────────────────
 const Ic = {
   Plus: () => (

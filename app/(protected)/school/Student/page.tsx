@@ -4,11 +4,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+
 import {
   Users, TrendingUp, CheckCircle, BookOpen, Search,
   Plus, X, Eye, Pencil, Trash2, Mail, RefreshCw, Download, Loader2,
   ChevronLeft, ChevronRight, RefreshCcw, Copy, Check, AlertCircle,
 } from "lucide-react";
+const authHeaders = (): HeadersInit => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 /* ================= TYPES ================= */
 interface Student {
@@ -217,7 +222,8 @@ export default function Student() {
         ...(filterGrade && { grade: filterGrade }),
         ...(filterBatch && { batch: filterBatch }),
       });
-      const res = await fetch(`/api/students?${params}`);
+      // const res = await fetch(`/api/students?${params}`);
+     const res = await fetch(`/api/students?${params}`, { headers: authHeaders() });
       const json = await res.json();
       if (json.success) {
         setStudents(json.data);
@@ -388,11 +394,16 @@ export default function Student() {
       const url = editMode ? `/api/students/${selectedId}` : "/api/students";
       const method = editMode ? "PUT" : "POST";
 
+      // const res = await fetch(url, {
+      //   method,
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify(body),
+      // });
       const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+  method,
+  headers: { "Content-Type": "application/json", ...authHeaders() },
+  body: JSON.stringify(body),
+});
 
       const json = await res.json();
       if (!json.success) throw new Error(json.message ?? "Request failed.");
@@ -415,7 +426,8 @@ export default function Student() {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`/api/students/${id}`, { method: "DELETE" });
+      // const res = await fetch(`/api/students/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/students/${id}`, { method: "DELETE", headers: authHeaders() });
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
       fetchStudents();

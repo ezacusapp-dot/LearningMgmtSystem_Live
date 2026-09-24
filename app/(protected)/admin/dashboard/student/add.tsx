@@ -1,5 +1,6 @@
+
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StudentFormData {
@@ -38,7 +39,8 @@ interface AddModalProps {
   onClose: () => void;
   loading: boolean;
   gradeOptions: Option[];
-  schoolOptions: Option[];
+  // Now optional: if not provided (or empty), the modal fetches schools from /api/schools itself.
+  schoolOptions?: Option[];
 }
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
@@ -78,18 +80,18 @@ function generatePassword(length: number = 10): string {
   const digits = "0123456789";
   const special = "!@#$%^&*";
   const all = upper + lower + digits + special;
-  
+
   const pw: string[] = [
     upper[Math.floor(Math.random() * upper.length)],
     lower[Math.floor(Math.random() * lower.length)],
     digits[Math.floor(Math.random() * digits.length)],
     special[Math.floor(Math.random() * special.length)],
   ];
-  
+
   for (let i = pw.length; i < length; i++) {
     pw.push(all[Math.floor(Math.random() * all.length)]);
   }
-  
+
   return pw.sort(() => Math.random() - 0.5).join("");
 }
 
@@ -99,6 +101,26 @@ function gpaColor(g: number): string {
 
 function attColor(a: number): string {
   return a >= 90 ? "#34d399" : a >= 75 ? "#fbbf24" : "#f87171";
+}
+
+// Normalizes whatever shape /api/schools returns into { value, label } options.
+// Handles: raw array, { data: [...] }, { schools: [...] }, and school objects
+// keyed as id/_id/schoolId and name/schoolName/label.
+function normalizeSchools(json: any): Option[] {
+  const list: any[] = Array.isArray(json)
+    ? json
+    : json?.data ?? json?.schools ?? json?.result ?? [];
+
+  if (!Array.isArray(list)) return [];
+
+  return list
+    .map((s: any) => {
+      const value = s?.id ?? s?._id ?? s?.schoolId ?? s?.value;
+      const label = s?.name ?? s?.schoolName ?? s?.label;
+      if (value === undefined || value === null) return null;
+      return { value: String(value), label: label ? String(label) : String(value) };
+    })
+    .filter((o): o is Option => o !== null);
 }
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
@@ -255,9 +277,10 @@ interface SelectProps {
   onChange: (value: string) => void;
   options: (string | Option)[];
   placeholder?: string;
+  disabled?: boolean;
 }
 
-function Select({ value, onChange, options, placeholder }: SelectProps) {
+function Select({ value, onChange, options, placeholder, disabled }: SelectProps) {
   const isOption = (item: string | Option): item is Option => {
     return typeof item === 'object' && 'value' in item && 'label' in item;
   };
@@ -267,6 +290,7 @@ function Select({ value, onChange, options, placeholder }: SelectProps) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
         style={{
           width: "100%",
           padding: "0.65rem 2rem 0.65rem 0.9rem",
@@ -276,7 +300,8 @@ function Select({ value, onChange, options, placeholder }: SelectProps) {
           color: value ? "#e2e8f0" : "#3a4460",
           fontSize: "0.875rem",
           outline: "none",
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.6 : 1,
           appearance: "none",
           fontFamily: "inherit"
         }}
@@ -307,11 +332,63 @@ export default function AddModal({
   onClose,
   loading,
   gradeOptions,
-  schoolOptions,
+  schoolOptions: schoolOptionsProp,
 }: AddModalProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPw, setShowPw] = useState(false);
   const [showCp, setShowCp] = useState(false);
+
+  // ── Schools fetched from the API ────────────────────────────────────────
+  const [schoolOptions, setSchoolOptions] = useState<Option[]>(schoolOptionsProp ?? []);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [schoolsError, setSchoolsError] = useState<string>("");
+
+  useEffect(() => {
+    // If a non-empty list is passed in as a prop, trust it and skip fetching.
+    if (schoolOptionsProp && schoolOptionsProp.length > 0) {
+      setSchoolOptions(schoolOptionsProp);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchSchools() {
+      setSchoolsLoading(true);
+      setSchoolsError("");
+      try {
+        const res = await fetch("/api/schools", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to load schools (${res.status})`);
+        }
+
+        const json = await res.json();
+        const opts = normalizeSchools(json);
+
+        if (!cancelled) {
+          setSchoolOptions(opts);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setSchoolsError(err?.message || "Failed to load schools");
+        }
+      } finally {
+        if (!cancelled) {
+          setSchoolsLoading(false);
+        }
+      }
+    }
+
+    fetchSchools();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const strength = pwStrength(formData.password);
 
@@ -355,43 +432,43 @@ export default function AddModal({
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) errs.name = "Student name is required";
-    
+
     if (!formData.email.trim()) {
       errs.email = "Email is required";
     } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
       errs.email = "Invalid email address";
     }
-    
+
     if (!formData.phone.trim()) {
       errs.phone = "Phone is required";
     } else if (!/^\d{10}$/.test(formData.phone.replace(/\s/g, ''))) {
       errs.phone = "Phone must be exactly 10 digits";
     }
-    
+
     if (!formData.parentPhone.trim()) {
       errs.parentPhone = "Parent phone is required";
     } else if (!/^\d{10}$/.test(formData.parentPhone.replace(/\s/g, ''))) {
       errs.parentPhone = "Parent phone must be exactly 10 digits";
     }
-    
+
     if (!formData.address.trim()) errs.address = "Address is required";
-    
+
     if (!formData.username.trim()) errs.username = "Username is required";
-    
+
     if (!formData.password) {
       errs.password = "Password is required";
     } else if (formData.password.length < 6) {
       errs.password = "Min 6 characters";
     }
-    
+
     if (!formData.confirmPassword) {
       errs.confirmPassword = "Please confirm password";
     } else if (formData.password !== formData.confirmPassword) {
       errs.confirmPassword = "Passwords do not match";
     }
-    
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -589,7 +666,12 @@ export default function AddModal({
           </div>
 
           {/* School */}
-          <Field label="School" icon={<Ic.Building />} required error={errors.schoolId}>
+          <Field
+            label="School"
+            icon={<Ic.Building />}
+            required
+            error={errors.schoolId || schoolsError}
+          >
             <Select
               value={formData.schoolId}
               onChange={(v) => {
@@ -606,7 +688,14 @@ export default function AddModal({
                 });
               }}
               options={schoolOptions}
-              placeholder="Select School"
+              placeholder={
+                schoolsLoading
+                  ? "Loading schools…"
+                  : schoolOptions.length === 0
+                  ? "No schools available"
+                  : "Select School"
+              }
+              disabled={schoolsLoading}
             />
           </Field>
 
