@@ -1,96 +1,55 @@
 
-
-
-// import { prisma } from "@/lib/prisma";
-
-// /* ================= CREATE ================= */
-// export const createStudentRepo = async (data: any) => {
-//   return prisma.student.create({
-//     data,
-//   });
-// };
-
-// /* ================= FIND BY ID ================= */
-// export const findStudentByIdRepo = async (id: number) => {  // ✅ Keep as number
-//   return prisma.student.findUnique({
-//     where: { id },
-//   });
-// };
-
-// /* ================= FIND BY MOBILE ================= */
-// export const findStudentByMobileRepo = async (studentMobile: string) => {
-//   return prisma.student.findFirst({
-//     where: {
-//       studentMobile,
-//     },
-//   });
-// };
-
-// /* ================= FIND BY EMAIL ================= */
-// export const findStudentByEmailRepo = async (studentEmail: string) => {
-//   return prisma.student.findFirst({
-//     where: {
-//       studentEmail,
-//     },
-//   });
-// };
-
-// /* ================= GET LIST ================= */
-// export const getStudentRepo = async (
-//   where: any,
-//   skip: number,
-//   limit: number
-// ) => {
-//   return prisma.student.findMany({
-//     where,
-//     skip,
-//     take: limit,
-//     orderBy: { createdAt: "desc" },
-//   });
-// };
-
-// /* ================= COUNT ================= */
-// export const countStudentRepo = async (where: any) => {
-//   return prisma.student.count({ where });
-// };
-
-// /* ================= UPDATE ================= */
-// export const updateStudentRepo = async (
-//   id: number,
-//   data: any
-// ) => {
-//   return prisma.student.update({
-//     where: { id },
-//     data,
-//   });
-// };
-
-// /* ================= DELETE ================= */
-// export const deleteStudentRepo = async (id: number) => {
-//   return prisma.student.delete({
-//     where: { id },
-//   });
-// };
-
-
 import { prisma } from "@/lib/prisma";
 
+// Small, reusable select so every read includes the linked school's
+// id + name without pulling the whole School row.
+const withSchool = {
+  school: {
+    select: { id: true, name: true },
+  },
+};
+
 /* ═══════════════════════════════════════
-   CREATE
+   SCHOOL LOOKUP (used to validate schoolId)
+═══════════════════════════════════════ */
+export const findSchoolByIdRepo = async (id: string) => {
+  return prisma.school.findUnique({
+    where: { id },
+    select: { id: true, name: true, active: true },
+  });
+};
+
+/* ═══════════════════════════════════════
+   CREATE  (student + school counter, atomic)
 ═══════════════════════════════════════ */
 export const createStudentRepo = async (data: any) => {
-  return prisma.student.create({ data });
+  return prisma.$transaction(async (tx) => {
+    const student = await tx.student.create({
+      data,
+      include: withSchool,
+    });
+
+    await tx.school.update({
+      where: { id: data.schoolId },
+      data: { students: { increment: 1 } },
+    });
+
+    return student;
+  });
 };
 
 /* ═══════════════════════════════════════
    FIND BY ID
 ═══════════════════════════════════════ */
 export const findStudentByIdRepo = async (id: number) => {
-  return prisma.student.findUnique({ where: { id } });
+  return prisma.student.findUnique({
+    where: { id },
+    include: withSchool,
+  });
 };
 
 /* ═══════════════════════════════════════
-   FIND BY USERNAME  ← new
+   FIND BY USERNAME
 ═══════════════════════════════════════ */
 export const findStudentByUsernameRepo = async (username: string) => {
   return prisma.student.findUnique({ where: { username } });
@@ -123,6 +82,7 @@ export const getStudentRepo = async (
     skip,
     take: limit,
     orderBy: { createdAt: "desc" },
+    include: withSchool,
   });
 };
 
@@ -134,15 +94,47 @@ export const countStudentRepo = async (where: any) => {
 };
 
 /* ═══════════════════════════════════════
-   UPDATE
+   UPDATE  (moves school counters if school changed)
 ═══════════════════════════════════════ */
-export const updateStudentRepo = async (id: number, data: any) => {
-  return prisma.student.update({ where: { id }, data });
+export const updateStudentRepo = async (
+  id: number,
+  data: any,
+  oldSchoolId?: string | null
+) => {
+  return prisma.$transaction(async (tx) => {
+    const student = await tx.student.update({
+      where: { id },
+      data,
+      include: withSchool,
+    });
+
+    // Only move counters when the school actually changed
+    if (data.schoolId && data.schoolId !== oldSchoolId) {
+      if (oldSchoolId) {
+        await tx.school.update({
+          where: { id: oldSchoolId },
+          data: { students: { decrement: 1 } },
+        });
+      }
+      await tx.school.update({
+        where: { id: data.schoolId },
+        data: { students: { increment: 1 } },
+      });
+    }
+
+    return student;
+  });
 };
 
-/* ═══════════════════════════════════════
-   DELETE
-═══════════════════════════════════════ */
-export const deleteStudentRepo = async (id: number) => {
-  return prisma.student.delete({ where: { id } });
+export const deleteStudentRepo = async (id: number, schoolId?: string | null) => {
+  return prisma.$transaction(async (tx) => {
+    await tx.student.delete({ where: { id } });
+
+    if (schoolId) {
+      await tx.school.update({
+        where: { id: schoolId },
+        data: { students: { decrement: 1 } },
+      });
+    }
+  });
 };

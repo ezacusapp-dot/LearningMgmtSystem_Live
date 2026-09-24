@@ -9,7 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 enum ModuleType {
   LESSON
   REVISION
@@ -142,7 +141,7 @@ model School {
   address      String
   region       String
   state        String
-  students     Int                @default(0)
+  students     Int                @default(0)   // ⚠️ see note below
   active       Boolean            @default(true)
   subscription SubscriptionStatus @default(trial)
   performance  Int                @default(0)
@@ -151,9 +150,10 @@ model School {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
+  studentRecords Student[]   // 👈 NEW — back-relation to actual students
+
   @@map("schools")
 }
-
 model CourseLevel {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -525,17 +525,21 @@ model Student {
   address       String?
   role          UserRole @default(STUDENT)
   createdAt     DateTime @default(now())
+  schoolId String?
+  school   School? @relation(  fields: [schoolId], references: [id], onDelete: Cascade )
+ // 👈 NEW
 
   enrollments    StudentCourseEnrollment[]
   moduleProgress StudentModuleProgress[]
   lessonProgress StudentLessonProgress[]
   quizAttempts   StudentQuizAttempt[]
   certificates   Certificate[]
- examAttempts     ExamAttempt[]      // NEW
-  examCertificates ExamCertificate[]  // NEW
+  examAttempts     ExamAttempt[]
+  examCertificates ExamCertificate[]
+
+@@index([schoolId])
   @@map("students")
 }
-
 // ============================================================
 // STUDENT — ENROLLMENT & PROGRESS
 // ============================================================

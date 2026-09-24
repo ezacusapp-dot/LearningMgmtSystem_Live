@@ -1,48 +1,5 @@
 
-
-// import { z } from "zod";
-
-// // ✅ Base schema (NO refine here)
-// const baseStudentSchema = z.object({
-//   firstName: z.string().min(1),
-//   middleName: z.string().optional(),
-//   lastName: z.string().min(1),
-
-//   studentMobile: z.string().optional(),
-//   studentEmail: z.string().email().optional(),
-
-//   parentMobile: z.string().min(10),
-//   parentEmail: z.string().email().optional(),
-
-//   standard: z.string().min(1),  // ✅ Changed from 'grade' to 'standard'
-//   batch: z.string().optional(),
-
-//   schoolYear: z.string().min(4),
-//   address: z.string().optional(),
-//   status: z.string().optional(),  // ✅ Added status as string
-// });
-
-// // ✅ Create Schema (with refine)
-// export const createStudentSchema = baseStudentSchema.refine(
-//   (data) => data.studentMobile || data.studentEmail,
-//   {
-//     message: "Either studentMobile or studentEmail is required",
-//   }
-// );
-
-// // ✅ Update Schema (NO refine, but partial allowed)
-// export const updateStudentSchema = baseStudentSchema.partial();
-
-// // ✅ Validators
-// export const validateCreateStudent = (data: any) => {
-//   return createStudentSchema.parse(data);
-// };
-
-// export const validateUpdateStudent = (data: any) => {
-//   return updateStudentSchema.parse(data);
-// };
-
-import { z } from "zod";
+ import { z } from "zod";
 
 // ── Username: lowercase letters, numbers, dot; 6–20 chars; must start with a letter ──
 const usernameSchema = z
@@ -81,6 +38,9 @@ const baseStudentSchema = z.object({
   parentMobile: z.string().min(10, "Parent mobile must be at least 10 digits"),
   parentEmail:  z.string().email("Invalid parent email").optional().or(z.literal("")),
 
+  // 👈 NEW — every student must be tied to a school
+  schoolId: z.string().min(1, "School is required"),
+
   standard:   z.string().min(1, "Grade is required"),
   batch:      z.string().optional(),
   schoolYear: z.string().min(4, "School year is required"),
@@ -88,10 +48,10 @@ const baseStudentSchema = z.object({
   status:     z.string().optional(),
 });
 
-// ── Create: username + password are required (already non-optional in base) ──
+// ── Create: username + password + schoolId are required (already non-optional in base) ──
 export const createStudentSchema = baseStudentSchema;
 
-// ── Update: everything is optional ──
+// ── Update: everything is optional (schoolId can still be changed if provided) ──
 export const updateStudentSchema = baseStudentSchema.partial();
 
 export const validateCreateStudent = (data: any) => createStudentSchema.parse(data);

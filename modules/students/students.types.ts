@@ -1,61 +1,70 @@
+
+
 // export interface Student {
-//   id: string;
-//   firstName: string;
-//   middleName?: string;
-//   lastName: string;
+//   id:            string;
+//   firstName:     string;
+//   middleName?:   string;
+//   lastName:      string;
 
-//   studentMobile?: string;
+//   username:      string;
+//   password:      string;          // hashed in production — kept plain for now
+
 //   studentEmail?: string;
+//   studentMobile?: string;         // optional legacy field
 
-//   parentMobile: string;
+//   parentMobile:  string;
+//   parentEmail?:  string;
 
-//   grade: string;
-//   batch?: string;
+//   standard:      string;
+//   batch?:        string;
 
-//   status: boolean;
-//   schoolYear: string;
+//   status:        string;          // "Active" | "Inactive"
+//   schoolYear:    string;
+//   address?:      string;
 
-//   address?: string;
-
-//   createdAt: Date;
+//   createdAt:     Date;
 // }
 
 // export interface CreateStudentDTO {
-//   firstName: string;
-//   middleName?: string;
-//   lastName: string;
+//   firstName:    string;
+//   middleName?:  string;
+//   lastName:     string;
 
+//   username:     string;
+//   password:     string;
+
+//   studentEmail?:  string;
 //   studentMobile?: string;
-//   studentEmail?: string;
 
-//   parentMobile: string;
+//   parentMobile:  string;
+//   parentEmail?:  string;
 
-//   grade: string;
-//   batch?: string;
-
-//   schoolYear: string;
-//   address?: string;
+//   standard:     string;
+//   batch?:       string;
+//   schoolYear:   string;
+//   address?:     string;
 // }
 
 // export interface UpdateStudentDTO {
-//   firstName?: string;
-//   middleName?: string;
-//   lastName?: string;
+//   firstName?:   string;
+//   middleName?:  string;
+//   lastName?:    string;
 
+//   username?:    string;
+//   password?:    string;
+
+//   studentEmail?:  string;
 //   studentMobile?: string;
-//   studentEmail?: string;
 
-//   parentMobile?: string;
+//   parentMobile?:  string;
+//   parentEmail?:   string;
 
-//   grade?: string;
-//   batch?: string;
-
-//   status?: boolean;
-//   schoolYear?: string;
-
-//   address?: string;
+//   standard?:    string;
+//   batch?:       string;
+//   status?:      string;
+//   schoolYear?:  string;
+//   address?:     string;
 // }
-
 export interface Student {
   id:            string;
   firstName:     string;
@@ -70,6 +79,9 @@ export interface Student {
 
   parentMobile:  string;
   parentEmail?:  string;
+
+  // 👈 NEW — the school this student belongs to
+  schoolId?:     string;
 
   standard:      string;
   batch?:        string;
@@ -95,6 +107,9 @@ export interface CreateStudentDTO {
   parentMobile:  string;
   parentEmail?:  string;
 
+  // 👈 NEW — required when creating a student
+  schoolId:     string;
+
   standard:     string;
   batch?:       string;
   schoolYear:   string;
@@ -114,6 +129,9 @@ export interface UpdateStudentDTO {
 
   parentMobile?:  string;
   parentEmail?:   string;
+
+  // 👈 NEW — optional, only sent if the admin is moving the student to another school
+  schoolId?:    string;
 
   standard?:    string;
   batch?:       string;
