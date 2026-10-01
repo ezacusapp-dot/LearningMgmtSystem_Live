@@ -93,6 +93,13 @@ export const certificateIssuanceRepository = {
       orderBy: { issuedAt: "desc" },
     });
   },
+  // certificateIssuance.repository.ts
+async updateStudentNameSnapshot(id: string, studentNameSnapshot: string) {
+  return prisma.certificate.update({
+    where: { id },
+    data: { studentNameSnapshot },
+  });
+},
 
   async findByIdForStudent(id: string, studentId: number) {
     return prisma.certificate.findFirst({
