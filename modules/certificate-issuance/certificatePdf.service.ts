@@ -920,6 +920,14 @@ async function withRenderSlot<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+// certificatePdf.service.ts
+export async function deleteCachedCertificatePdf(certificateNumber: string): Promise<void> {
+  try {
+    await fs.unlink(certificateFilePath(certificateNumber));
+  } catch {
+    /* nothing cached */
+  }
+}
 // ─── Local-disk cache ────────────────────────────────────────────────────────
 // The certificate's content never changes after issuance (name/course/grade
 // are all snapshotted), so once rendered it's cached to disk permanently.
