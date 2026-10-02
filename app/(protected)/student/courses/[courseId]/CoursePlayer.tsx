@@ -3797,7 +3797,7 @@ export default function CoursePlayer({
           </div>
         </div>
 
-        {certificate && (
+        {/* {certificate && (
           <button
             onClick={handleDownloadCertificate}
             disabled={certDownloading}
@@ -3812,7 +3812,7 @@ export default function CoursePlayer({
             )}
             Certificate
           </button>
-        )}
+        )} */}
 
         <button
           onClick={onClose}
@@ -4116,7 +4116,7 @@ export default function CoursePlayer({
           </div>
 
           {/* Certificate banner — shown on every lesson once earned */}
-          {certificate && (
+          {/* {certificate && (
             <div className="mx-6 mb-5 flex-shrink-0">
               <div
                 className="flex items-center justify-between gap-4 p-4 rounded-2xl border"
@@ -4160,7 +4160,7 @@ export default function CoursePlayer({
                 </button>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* ── Tabs ──────────────────────────────────────────────────────── */}
           <div className="mx-6 mb-8 flex-shrink-0">
