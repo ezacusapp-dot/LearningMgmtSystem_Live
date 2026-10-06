@@ -3,6 +3,7 @@ import { verifyToken } from "./lib/paseto";
 
 const allowedOrigins = [
   "https://learning-mgmt-system-alpha.vercel.app",
+  "https://lms.onlineerp.org",
   "http://localhost:3000",
 ];
 
