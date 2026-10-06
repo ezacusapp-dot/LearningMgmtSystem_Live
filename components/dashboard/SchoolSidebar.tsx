@@ -66,7 +66,7 @@ export default function SchoolSidebar({ collapsed }: SidebarProps) {
   localStorage.removeItem("isLoggedIn");
   localStorage.removeItem("userRole");
   localStorage.removeItem("userEmail");
-  router.push("/Home");  // ✅ matches your (public)/login folder
+  router.push("/");  // ✅ matches your (public)/login folder
 };
 
   /* ---------- Nav Link ---------- */
