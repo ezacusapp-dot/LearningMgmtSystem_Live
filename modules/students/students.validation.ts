@@ -28,9 +28,15 @@ const baseStudentSchema = z.object({
   firstName:    z.string().min(1, "First name is required"),
   middleName:   z.string().optional(),
   lastName:     z.string().min(1, "Last name is required"),
+  age: z.coerce
+    .number({ invalid_type_error: "Age must be a number" })
+    .int("Age must be a whole number")
+    .min(3, "Age must be at least 3")
+    .max(100, "Age must be at most 100"),
 
   studentEmail:  z.string().email("Invalid student email").optional().or(z.literal("")),
   studentMobile: z.string().optional(),   // kept optional for backward compat
+
 
   username: usernameSchema,
   password: passwordSchema,

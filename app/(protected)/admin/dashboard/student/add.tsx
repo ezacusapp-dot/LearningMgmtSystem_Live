@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface StudentFormData {
   name: string;
+  age:string;
   email: string;
   phone: string;
   dob: string;
@@ -434,6 +435,12 @@ export default function AddModal({
     const errs: Record<string, string> = {};
 
     if (!formData.name.trim()) errs.name = "Student name is required";
+    const ageNum = Number(formData.age);
+if (!String(formData.age).trim()) {
+  errs.age = "Age is required";
+} else if (!Number.isInteger(ageNum) || ageNum < 3 || ageNum > 100) {
+  errs.age = "Enter a valid age between 3 and 100";
+}
 
     if (!formData.email.trim()) {
       errs.email = "Email is required";
@@ -637,7 +644,7 @@ export default function AddModal({
 
           {/* DOB & Gender */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-            <Field label="Date of Birth" icon={<Ic.Calendar />} error={errors.dob}>
+            {/* <Field label="Date of Birth" icon={<Ic.Calendar />} error={errors.dob}>
               <input
                 type="date"
                 value={formData.dob}
@@ -655,7 +662,31 @@ export default function AddModal({
                   fontFamily: "inherit"
                 }}
               />
-            </Field>
+            </Field> */}
+              {/* 👈 NEW */}
+  <Field label="Age" icon={<Ic.Person />} required error={errors.age}>
+    <input
+      type="number"
+      min={3}
+      max={100}
+      value={formData.age}
+      onChange={(e) => setField("age", e.target.value)}
+      placeholder="e.g. 14"
+      style={{
+        width: "100%",
+        padding: "0.65rem 0.9rem",
+        background: "#0f1117",
+        border: `1px solid ${errors.age ? "#7f1d1d" : "#2d3448"}`,
+        borderRadius: 9,
+        color: "#e2e8f0",
+        fontSize: "0.875rem",
+        outline: "none",
+        boxSizing: "border-box" as const,
+        fontFamily: "inherit",
+      }}
+    />
+  </Field>
+
             <Field label="Gender" icon={<Ic.Gender />}>
               <Select
                 value={formData.gender}

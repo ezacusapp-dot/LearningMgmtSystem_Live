@@ -53,7 +53,8 @@ export default function ViewModal({ student, idx, onClose }) {
             {[
               { label:"Email",         value:student.email,      icon:<Ic.Mail /> },
               { label:"Phone",         value:student.phone,      icon:<Ic.Phone /> },
-              { label:"Date of Birth", value:student.dob,        icon:<Ic.Calendar /> },
+              { label:"Age",           value:student.age > 0 ? `${student.age} years` : "", icon:<Ic.Person /> },
+              // { label:"Date of Birth", value:student.dob,        icon:<Ic.Calendar /> },
               { label:"Gender",        value:student.gender,     icon:<Ic.Gender /> },
               { label:"School",        value:student.school,     icon:<Ic.Building /> },
               { label:"Enrolled",      value:student.enrolled,   icon:<Ic.Calendar /> },

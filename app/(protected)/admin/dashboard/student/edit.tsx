@@ -198,6 +198,7 @@ function CredRow({ label, icon, value, mono, onCopy }: {
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface FormData {
   name: string;
+   age: string; 
   email: string;
   phone: string;
   dob: string;
@@ -327,6 +328,10 @@ export default function EditModal({
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!formData.name.trim())        errs.name = "Student name is required";
+    const ageNum = Number(formData.age);
+if (!String(formData.age).trim()) errs.age = "Age is required";
+else if (!Number.isInteger(ageNum) || ageNum < 3 || ageNum > 100)
+  errs.age = "Enter a valid age between 3 and 100";
     if (!formData.email.trim())       errs.email = "Email is required";
     else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email))
       errs.email = "Invalid email address";
@@ -391,9 +396,12 @@ export default function EditModal({
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-            <Field label="Date of Birth" icon={<Ic.Calendar />} error={errors.dob}>
+            {/* <Field label="Date of Birth" icon={<Ic.Calendar />} error={errors.dob}>
               <input type="date" value={formData.dob} onChange={e => set("dob", e.target.value)} {...inp(errors.dob)} />
-            </Field>
+            </Field> */}
+              <Field label="Age" icon={<Ic.Person />} required error={errors.age}>
+    <input type="number" min={3} max={100} value={formData.age} onChange={e => set("age", e.target.value)} placeholder="e.g. 14" {...inp(errors.age)} />
+  </Field>
             <Field label="Gender" icon={<Ic.Gender />}>
               <Sel value={formData.gender} onChange={v => set("gender", v)} options={["Male", "Female", "Other"]} />
             </Field>
