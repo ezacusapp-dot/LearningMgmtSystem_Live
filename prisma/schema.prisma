@@ -512,6 +512,7 @@ model Student {
   firstName     String
   middleName    String?
   lastName      String
+  age           Int  @default(0)
   studentEmail  String?
   studentMobile String?
   username      String   @unique

@@ -15,7 +15,8 @@ interface StudentQueryParams {
 
 interface Student {
   id: string;
-  name: string;
+  name: string ;
+  age: number; 
   email: string;
   phone: string;
   dob: string;
@@ -41,6 +42,7 @@ interface FormData {
   name: string;
   email: string;
   phone: string;
+  age: string; 
   dob: string;
   gender: string;
   grade: string;
@@ -100,6 +102,7 @@ function formToDTO(f: FormData) {
   return {
     firstName: firstName || "",
     lastName: lastName || "",
+     age: Number(f.age), 
     username: f.username,
     password: f.password,
     studentEmail: f.email,
@@ -119,6 +122,7 @@ function dtoToDisplay(s: any): Student {
   return {
     id: String(s.id),
     name: `${s.firstName || ""} ${s.lastName || ""}`.trim(),
+    age: Number(s.age) || 0,
     email: s.studentEmail || "",
     phone: s.studentMobile || "",
     dob: s.dob || "",
@@ -146,6 +150,7 @@ function dtoToDisplay(s: any): Student {
 
 const defaultForm: FormData = {
   name: "",
+   age: "",   
   email: "",
   phone: "",
   dob: "",
@@ -639,6 +644,7 @@ export default function StudentsManagement() {
     const schoolOpt = schoolOptions.find(sc => sc.value === s.schoolId || sc.label === s.school);
     setFormData({
       name: s.name,
+      age: s.age > 0 ? String(s.age) : "",  
       email: s.email,
       phone: s.phone,
       dob: s.dob,

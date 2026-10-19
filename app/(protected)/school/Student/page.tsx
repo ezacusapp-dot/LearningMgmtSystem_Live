@@ -21,6 +21,7 @@ interface Student {
   firstName: string;
   middleName?: string;
   lastName: string;
+  age : number;
   studentEmail?: string;   // ✅ restored
   username?: string;
   password?: string;
@@ -125,7 +126,9 @@ const getEmptyForm = (): FormState => ({
   firstName: "",
   middleName: "",
   lastName: "",
-  studentEmail: "",   // ✅ restored
+  age : "",
+  studentEmail: "", 
+  // ✅ restored
   username: "",
   password: "",
   parentMobile: "",
@@ -141,6 +144,7 @@ type FormState = {
   firstName: string;
   middleName: string;
   lastName: string;
+  age: string;
   studentEmail: string;   // ✅ restored
   username: string;
   password: string;
@@ -264,6 +268,7 @@ export default function Student() {
     firstName: s.firstName || "",
     middleName: s.middleName || "",
     lastName: s.lastName || "",
+    age: s.age != null ? String(s.age) : "", 
     studentEmail: s.studentEmail || "",   // ✅ restored
     username: s.username || "",
     password: s.password || "",
@@ -351,6 +356,12 @@ export default function Student() {
 
     if (!form.firstName.trim()) errors.firstName = "First name is required.";
     if (!form.lastName.trim()) errors.lastName = "Last name is required.";
+    const ageNum = Number(form.age);
+if (!form.age.trim()) {
+  errors.age = "Age is required.";
+} else if (!Number.isInteger(ageNum) || ageNum < 3 || ageNum > 100) {
+  errors.age = "Enter a valid age between 3 and 100.";
+}
     if (!form.parentMobile.trim()) errors.parentMobile = "Parent mobile is required.";
     if (!form.standard) errors.standard = "Grade/Standard is required.";
     if (!form.schoolYear) errors.schoolYear = "School year is required.";
@@ -375,6 +386,7 @@ export default function Student() {
       const body: Record<string, unknown> = {
         firstName: form.firstName,
         lastName: form.lastName,
+        age: Number(form.age), 
         parentMobile: form.parentMobile,
         standard: form.standard,
         schoolYear: form.schoolYear,
@@ -680,6 +692,11 @@ export default function Student() {
                     value={form.lastName} onChange={handleChange} disabled={viewMode}
                     error={fieldErrors.lastName}
                   />
+                  <Field
+  label="Age *" name="age" placeholder="14"
+  value={form.age} onChange={handleChange} disabled={viewMode}
+  type="number" error={fieldErrors.age}
+/>
                   {/* ✅ studentEmail field restored */}
                   <Field
                     label="Student Email" name="studentEmail" placeholder="student@school.edu"
