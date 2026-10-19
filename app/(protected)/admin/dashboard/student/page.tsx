@@ -15,7 +15,7 @@ interface StudentQueryParams {
 
 interface Student {
   id: string;
-  name: string;
+  name: number;
   age: string; 
   email: string;
   phone: string;
@@ -42,7 +42,7 @@ interface FormData {
   name: string;
   email: string;
   phone: string;
-  age: number; 
+  age: string; 
   dob: string;
   gender: string;
   grade: string;
@@ -122,7 +122,7 @@ function dtoToDisplay(s: any): Student {
   return {
     id: String(s.id),
     name: `${s.firstName || ""} ${s.lastName || ""}`.trim(),
-    age: Number(s.age) || 0,   // 👈 NE
+    age: Number(s.age) || 0,
     email: s.studentEmail || "",
     phone: s.studentMobile || "",
     dob: s.dob || "",
