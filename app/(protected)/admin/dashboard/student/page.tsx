@@ -15,8 +15,8 @@ interface StudentQueryParams {
 
 interface Student {
   id: string;
-  name: number;
-  age: string; 
+  name: string ;
+  age: number; 
   email: string;
   phone: string;
   dob: string;
