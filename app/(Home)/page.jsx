@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+   import { useState, useEffect, useRef, cloneElement } from "react";
 import { useRouter } from "next/navigation";
 
 // ------------------------------ DATA -----------------------------------------
@@ -40,6 +40,15 @@ const features = [
     description: "Hands-on coding projects and real-world application challenges",
     highlight: true,
   },
+];
+
+const featureThemes = [
+  { card: "bg-[#f7fbdc] border-[#c8e03a]/60 hover:border-[#c8e03a]", tile: "bg-[#c8e03a] [&_svg]:text-gray-900", bar: "bg-[#c8e03a]" },
+  { card: "bg-purple-50 border-purple-200 hover:border-purple-400", tile: "bg-[#49205E] [&_svg]:text-white", bar: "bg-[#49205E]" },
+  { card: "bg-pink-50 border-pink-200 hover:border-pink-400", tile: "bg-[#BC579E] [&_svg]:text-white", bar: "bg-[#BC579E]" },
+  { card: "bg-sky-50 border-sky-200 hover:border-sky-400", tile: "bg-sky-500 [&_svg]:text-white", bar: "bg-sky-500" },
+  { card: "bg-orange-50 border-orange-200 hover:border-orange-400", tile: "bg-orange-500 [&_svg]:text-white", bar: "bg-orange-500" },
+  { card: "bg-emerald-50 border-emerald-200 hover:border-emerald-400", tile: "bg-emerald-500 [&_svg]:text-white", bar: "bg-emerald-500" },
 ];
 
 const courses = [
@@ -96,6 +105,8 @@ function Navbar() {
     { name: "Home", id: "home" },
     { name: "Courses", id: "courses" },
     { name: "Features", id: "features" },
+      // { name: "Community", href: "community" },
+      //  { name: "Blog", id: "Blog" },
     { name: "Contact Us", id: "contact" }
   ];
   return (
@@ -103,14 +114,22 @@ function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div onClick={() => smoothScroll("home")} className="cursor-pointer"><Logo /></div>
         <div className="hidden md:flex items-center gap-6">
-          {navItems.map(item => <button key={item.name} onClick={() => smoothScroll(item.id)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">{item.name}</button>)}
+          {navItems.map(item => (
+  <button
+    key={item.name}
+    onClick={() => (item.href ? router.push(item.href) : smoothScroll(item.id))}
+    className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+  >
+    {item.name}
+  </button>
+))}
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-1 bg-white border border-gray-200 rounded-full px-3 py-1 shadow-sm">
+          {/* <div className="hidden sm:flex items-center gap-1 bg-white border border-gray-200 rounded-full px-3 py-1 shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
             <span className="font-bold text-gray-900 text-xs">{learners.toLocaleString()}</span>
             <span className="text-gray-500 text-[10px]">Learning Now</span>
-          </div>
+          </div> */}
           <button onClick={() => router.push("/student_login")} className="px-3 py-1.5 rounded-lg font-medium text-white text-sm transition-all duration-200 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #49205E, #BC579E)", boxShadow: "0 0 15px rgba(73,32,94,0.3)" }}>Student Login</button>
           <button onClick={() => router.push("/school-login")} className="px-3 py-1.5 rounded-lg font-medium text-white text-sm transition-all duration-200 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #49205E, #BC579E)", boxShadow: "0 0 15px rgba(73,32,94,0.3)" }}>School Login</button>
           <button className="px-3 py-1.5 rounded-lg font-medium text-white text-sm transition-all duration-200 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #49205E, #BC579E)", boxShadow: "0 0 15px rgba(73,32,94,0.3)" }}>Get Started</button>
@@ -158,18 +177,164 @@ function Hero() {
   );
 }
 
+// function Features() {
+//   return (
+//     <section id="features" className="py-24 bg-gray-50">
+//       <div className="max-w-7xl mx-auto px-6">
+//         <div className="text-center mb-16"><h2 className="text-4xl font-extrabold text-gray-900 mb-4">why choose us?</h2><p className="text-gray-500 text-lg">Comprehensive learning ecosystem designed for success</p></div>
+//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//           {features.map((f, i) => (
+//             <div key={i} className={`bg-white rounded-2xl p-8 shadow-sm border transition-all duration-200 hover:shadow-md ${f.highlight ? "border-pink-400 ring-1 ring-pink-400" : "border-gray-100"}`}>
+//               <div className="mb-5">{f.icon}</div>
+//               <h3 className="text-lg font-bold text-gray-900 mb-3">{f.title}</h3>
+//               <p className="text-gray-500 text-sm leading-relaxed">{f.description}</p>
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+//     </section>
+//   );
+// }
 function Features() {
+  const [perView, setPerView] = useState(4);
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const touchStartX = useRef(null);
+
+  const maxIndex = Math.max(0, features.length - perView);
+
+  // Responsive: 1 on mobile, 2 on tablet, 3 on laptop, 4 on large screens
+  useEffect(() => {
+    setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const update = () => {
+      const w = window.innerWidth;
+      setPerView(w < 640 ? 1 : w < 900 ? 2 : w < 1200 ? 3 : 4);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
+    setIndex((i) => Math.min(i, maxIndex));
+  }, [maxIndex]);
+
+  // Autoplay (pauses on hover / touch)
+  useEffect(() => {
+    if (paused || reduceMotion) return;
+    const t = setInterval(() => setIndex((i) => (i >= maxIndex ? 0 : i + 1)), 3000);
+    return () => clearInterval(t);
+  }, [paused, reduceMotion, maxIndex]);
+
+  const next = () => setIndex((i) => (i >= maxIndex ? 0 : i + 1));
+  const prev = () => setIndex((i) => (i <= 0 ? maxIndex : i - 1));
+
+  const onTouchStart = (e) => {
+    setPaused(true);
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e) => {
+    if (touchStartX.current !== null) {
+      const diff = touchStartX.current - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) diff > 0 ? next() : prev();
+    }
+    touchStartX.current = null;
+    setPaused(false);
+  };
+
+  const arrowBtn =
+    "w-9 h-9 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center hover:bg-[#49205E] hover:border-[#49205E] hover:text-white text-gray-700 transition-colors focus-visible:ring-2 focus-visible:ring-[#BC579E]";
+
   return (
-    <section id="features" className="py-24 bg-gray-50">
+    <section id="features" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16"><h2 className="text-4xl font-extrabold text-gray-900 mb-4">Why Choose Code Excellence?</h2><p className="text-gray-500 text-lg">Comprehensive learning ecosystem designed for success</p></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((f, i) => (
-            <div key={i} className={`bg-white rounded-2xl p-8 shadow-sm border transition-all duration-200 hover:shadow-md ${f.highlight ? "border-pink-400 ring-1 ring-pink-400" : "border-gray-100"}`}>
-              <div className="mb-5">{f.icon}</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-3">{f.title}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">{f.description}</p>
-            </div>
+        <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
+          <div>
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Learning That Makes a Difference</h2>
+            <p className="text-gray-500">Comprehensive learning ecosystem designed for success</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={prev} aria-label="Previous" className={arrowBtn}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button onClick={next} aria-label="Next" className={arrowBtn}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Slider */}
+        <div
+          className="overflow-hidden -mx-2 py-3"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${index * (100 / perView)}%)` }}
+          >
+            {features.map((f, i) => {
+              const t = featureThemes[i % featureThemes.length];
+              const isSelected = i === selected;
+              return (
+                <div key={f.title} className="flex-none px-2" style={{ width: `${100 / perView}%` }}>
+                  <button
+                    onClick={() => setSelected(i)}
+                    aria-pressed={isSelected}
+                    className={`group relative w-full h-full text-left rounded-2xl border-2 p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-[#BC579E] ${t.card} ${
+                      isSelected ? "shadow-lg -translate-y-1.5" : "shadow-sm"
+                    }`}
+                  >
+                    {f.highlight && (
+                      <span className="absolute top-3 right-3 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#49205E] text-white">
+                        Popular
+                      </span>
+                    )}
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6 [&_svg]:w-6 [&_svg]:h-6 ${t.tile}`}
+                    >
+                      {f.icon}
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900 mb-1.5 leading-snug">{f.title}</h3>
+                    <p
+                      className={`text-gray-600 text-sm leading-relaxed ${
+                        isSelected ? "" : "line-clamp-2"
+                      }`}
+                    >
+                      {f.description}
+                    </p>
+                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#49205E]">
+                      {isSelected ? "Showing details" : "Tap to read more"}
+                      <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                    </span>
+                    {/* colored accent bar that grows when selected */}
+                    <span
+                      className={`absolute left-5 right-5 bottom-0 h-1 rounded-t-full origin-left transition-transform duration-300 ${t.bar} ${
+                        isSelected ? "scale-x-100" : "scale-x-0 group-hover:scale-x-50"
+                      }`}
+                    />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Dots */}
+        <div className="flex items-center justify-center gap-2 mt-5">
+          {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIndex(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                i === index ? "w-7 bg-gradient-to-r from-[#49205E] to-[#BC579E]" : "w-2 bg-gray-300 hover:bg-gray-400"
+              }`}
+            />
           ))}
         </div>
       </div>
@@ -177,7 +342,9 @@ function Features() {
   );
 }
 
+
 function LearningPaths() {
+   const router = useRouter();  
   const scrollContainer = useRef(null);
   const scrollLeft = () => scrollContainer.current?.scrollBy({ left: -300, behavior: "smooth" });
   const scrollRight = () => scrollContainer.current?.scrollBy({ left: 300, behavior: "smooth" });
@@ -187,7 +354,7 @@ function LearningPaths() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-start justify-between mb-12 flex-wrap gap-4">
           <div><h2 className="text-3xl font-extrabold text-gray-900 mb-2">Structured Learning Paths</h2><p className="text-gray-500 text-base">From Scratch to Professional Development</p></div>
-          <button onClick={() => smoothScroll("courses")} className="flex items-center gap-2 bg-purple-800 hover:bg-purple-900 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">View All Courses<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg></button>
+          <button onClick={() => router.push("/courses")}  className="flex items-center gap-2 bg-purple-800 hover:bg-purple-900 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">View All Courses<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg></button>
         </div>
         <div className="relative group">
           <button onClick={scrollLeft} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-purple-50"><svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></button>
@@ -223,14 +390,36 @@ function CTA() {
   );
 }
 
-function Footer() {
-  const links = [{ name: "Home", id: "home" }, { name: "Courses", id: "courses" }, { name: "Features", id: "features" }, { name: "Contact Us", id: "contact" }];
+   function Footer() {
+     const router = useRouter();
+     const links = [
+       { name: "Home", id: "home" },
+     // Navbar and Footer
+{ name: "Courses", href: "/courses" },
+       { name: "Features", id: "features" },
+       { name: "Refund Cancellation Policy", href: "/refund-policy" },
+       { name: "Contact Us", id: "contact" },
+     ];
   return (
     <footer id="contact" className="bg-gray-50 border-t border-gray-100">
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div><div className="mb-4 cursor-pointer" onClick={() => smoothScroll("home")}><Logo /></div><p className="text-gray-500 text-sm leading-relaxed">Empowering students with cutting-edge coding education</p></div>
-          <div><h4 className="font-bold text-gray-900 mb-5">Quick Links</h4><ul className="space-y-3">{links.map(link => <li key={link.name}><button onClick={() => smoothScroll(link.id)} className="text-gray-500 hover:text-gray-900 text-sm transition-colors">{link.name}</button></li>)}</ul></div>
+         <div>
+  <h4 className="font-bold text-gray-900 mb-5">Quick Links</h4>
+  <ul className="space-y-3">
+    {links.map(link => (
+      <li key={link.name}>
+        <button
+          onClick={() => (link.href ? router.push(link.href) : smoothScroll(link.id))}
+          className="text-gray-500 hover:text-gray-900 text-sm transition-colors"
+        >
+          {link.name}
+        </button>
+      </li>
+    ))}
+  </ul>
+</div>
           <div><h4 className="font-bold text-gray-900 mb-5">Resources</h4><ul className="space-y-3">{["Documentation","Help Center","Community","Blog"].map(l => <li key={l}><a href="#" className="text-gray-500 hover:text-gray-900 text-sm transition-colors">{l}</a></li>)}</ul></div>
           <div><h4 className="font-bold text-gray-900 mb-5">Contact</h4><p className="text-gray-500 text-sm mb-1">info@codeexcellence.com</p><p className="text-gray-500 text-sm mb-5">+91 98765 43210</p><div className="flex items-center gap-3">
             <a href="#" className="w-9 h-9 rounded-full bg-purple-800 hover:bg-purple-900 flex items-center justify-center"><svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" /></svg></a>
