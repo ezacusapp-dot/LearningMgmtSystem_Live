@@ -435,6 +435,20 @@ if (!form.age.trim()) {
     setDeleteId(id);
     setShowDeletePopup(true);
   };
+  /* ─────────────── SEND MAIL ─────────────── */
+const handleMailClick = (s: Student) => {
+  const email = s.studentEmail?.trim();
+
+  if (!email) {
+    alert(`No email address found for ${s.firstName} ${s.lastName}.`);
+    return;
+  }
+
+  const subject = encodeURIComponent("Message from School");
+  const body = encodeURIComponent(`Hello ${s.firstName},\n\n`);
+
+  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+};
 
   const handleDelete = async (id: string) => {
     try {
@@ -616,7 +630,19 @@ if (!form.age.trim()) {
               <div className="flex gap-3">
                 <Eye size={16} className="text-pink-400 cursor-pointer hover:scale-110 transition" onClick={() => openView(s)}  />
                 <Pencil size={16} className="text-purple-400 cursor-pointer hover:scale-110 transition" onClick={() => openEdit(s)} />
-                <Mail size={16} className="text-blue-400 cursor-pointer hover:scale-110 transition"  />
+                {/* <Mail size={16} className="text-blue-400 cursor-pointer hover:scale-110 transition"  /> */}
+                <Mail
+  size={16}
+  className={`transition ${
+    s.studentEmail
+      ? "text-blue-400 cursor-pointer hover:scale-110"
+      : "text-blue-400/30 cursor-not-allowed"
+  }`}
+  onClick={() => handleMailClick(s)}
+  aria-label="Send email"
+>
+  <title>{s.studentEmail ? `Email ${s.studentEmail}` : "No email available"}</title>
+</Mail>
                 <Trash2 size={16} className="text-red-400 cursor-pointer hover:scale-110 transition" onClick={() => handleDeleteClick(s.id)} />
               </div>
             </div>

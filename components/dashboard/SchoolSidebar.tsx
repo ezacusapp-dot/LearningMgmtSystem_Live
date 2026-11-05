@@ -34,16 +34,16 @@ type NavItem = {
 const MAIN_NAV: NavItem[] = [
   { label: "Dashboard", href: "/school", icon: <LayoutDashboard size={18} /> },
   { label: "Students", href: "/school/Student", icon: <Users size={18} /> },
-  { label: "Exam Management", href: "/school/exam-management", icon: <FileText size={18} /> },
-  { label: "Certificate Settings", href: "/school/certificate-settings", icon: <Award size={18} /> },
-  { label: "Batch Management", href: "/school/batch-management", icon: <Users size={18} /> },
-  { label: "Analytics", href: "/dashboard/analytics", icon: <BarChart3 size={18} /> },
+  // { label: "Exam Management", href: "/school/exam-management", icon: <FileText size={18} /> },
+  // { label: "Certificate Settings", href: "/school/certificate-settings", icon: <Award size={18} /> },
+  // { label: "Batch Management", href: "/school/batch-management", icon: <Users size={18} /> },
+  // { label: "Analytics", href: "/dashboard/analytics", icon: <BarChart3 size={18} /> },
   { label: "Courses", href: "/school/courses", icon: <BookOpen  size={18} /> },
 ];
 
-const SETTINGS_NAV: NavItem[] = [
-  { label: "Settings", href: "/dashboard/settings", icon: <Settings size={18} /> },
-];
+// const SETTINGS_NAV: NavItem[] = [
+//   { label: "Settings", href: "/dashboard/settings", icon: <Settings size={18} /> },
+// ];
 
 /* ======================================================
    COMPONENT
@@ -66,7 +66,7 @@ export default function SchoolSidebar({ collapsed }: SidebarProps) {
   localStorage.removeItem("isLoggedIn");
   localStorage.removeItem("userRole");
   localStorage.removeItem("userEmail");
-  router.push("/");  // ✅ matches your (public)/login folder
+  router.push(window.location.href = `${window.location.origin}/`);  // ✅ matches your (public)/login folder
 };
 
   /* ---------- Nav Link ---------- */
@@ -143,13 +143,13 @@ export default function SchoolSidebar({ collapsed }: SidebarProps) {
 
           <div className="mt-4 border-t border-slate-800" />
 
-          {!collapsed && (
+          {/* {!collapsed && (
             <p className="text-[10px] uppercase tracking-widest text-slate-500 px-3 pt-2 pb-1">
               Settings
             </p>
           )}
 
-          {SETTINGS_NAV.map(renderNavItem)}
+          {SETTINGS_NAV.map(renderNavItem)} */}
         </nav>
       </div>
 

@@ -294,7 +294,7 @@ export default function SchoolFormModal({
                   </select>
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-300">
                     <BarChart2 size={14} />
                     Performance
@@ -311,7 +311,7 @@ export default function SchoolFormModal({
                     }
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-lime-500"
                   />
-                </div>
+                </div> */}
               </div>
 
               {/* Toggle */}
