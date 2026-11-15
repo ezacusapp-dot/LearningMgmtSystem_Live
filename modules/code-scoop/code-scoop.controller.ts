@@ -7,15 +7,11 @@ import {
   createCodeScoopService, getCodeScoopsService, getCodeScoopByIdService,
   updateCodeScoopService, deleteCodeScoopService, ServiceError,
 } from "./code-scoop.service";
-import { assertAdmin } from "./admin-auth";
 
-// A broken or empty JSON body becomes a clean 400 instead of a 500
-const readJson = async (req: Request) => {
-  try {
-    return await req.json();
-  } catch {
-    throw new ServiceError("Invalid request body", 400);
-  }
+// Replace with your real admin/session check when ready.
+const assertAdmin = (req: Request) => {
+  const key = process.env.ADMIN_API_KEY;
+  if (!key || req.headers.get("x-admin-key") !== key) throw new ServiceError("Unauthorized", 401);
 };
 
 const fail = (err: unknown) => {
@@ -37,7 +33,7 @@ const fail = (err: unknown) => {
 // CREATE – public (the website form)
 export const createCodeScoopController = async (req: Request) => {
   try {
-    const data = validateCreateCodeScoop(await readJson(req));
+    const data = validateCreateCodeScoop(await req.json());
     const result = await createCodeScoopService(data);
     return NextResponse.json(
       { success: true, data: result, message: "Subscription request received" },
@@ -48,9 +44,10 @@ export const createCodeScoopController = async (req: Request) => {
   }
 };
 
-// GET list – open (no login check)
+// GET list – admin
 export const getCodeScoopsController = async (req: Request) => {
   try {
+    assertAdmin(req);
     const q = validateListCodeScoop(Object.fromEntries(new URL(req.url).searchParams));
     return NextResponse.json({ success: true, ...(await getCodeScoopsService(q)) });
   } catch (err) {
@@ -58,9 +55,10 @@ export const getCodeScoopsController = async (req: Request) => {
   }
 };
 
-// GET one – open (no login check)
+// GET one – admin
 export const getCodeScoopByIdController = async (req: Request, id: string) => {
   try {
+    assertAdmin(req);
     return NextResponse.json({ success: true, data: await getCodeScoopByIdService(id) });
   } catch (err) {
     return fail(err);
@@ -70,8 +68,8 @@ export const getCodeScoopByIdController = async (req: Request, id: string) => {
 // UPDATE – admin
 export const updateCodeScoopController = async (req: Request, id: string) => {
   try {
-    await assertAdmin(req);
-    const data = validateUpdateCodeScoop(await readJson(req));
+    assertAdmin(req);
+    const data = validateUpdateCodeScoop(await req.json());
     return NextResponse.json({
       success: true,
       data: await updateCodeScoopService(id, data),
@@ -85,7 +83,7 @@ export const updateCodeScoopController = async (req: Request, id: string) => {
 // DELETE – admin
 export const deleteCodeScoopController = async (req: Request, id: string) => {
   try {
-    await assertAdmin(req);
+    assertAdmin(req);
     await deleteCodeScoopService(id);
     return NextResponse.json({ success: true, message: "Subscription Deleted Successfully" });
   } catch (err) {
