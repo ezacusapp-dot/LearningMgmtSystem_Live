@@ -81,11 +81,11 @@ const mainNav: NavItem[] = [
 
     ],
   },
-  // {
-  //   label: "Learning Paths",
-  //   icon: <BarChart2 size={15} strokeWidth={1.8} />,
-  //   href: "/dashboard/learning_paths",
-  // },
+  {
+    label: "Code Scoop",
+    icon: <BarChart2 size={15} strokeWidth={1.8} />,
+    href: "/admin/dashboard/code-scoop",
+  },
   // {
   //   label: "Certification",
   //   icon: <Award size={15} strokeWidth={1.8} />,

@@ -952,3 +952,48 @@ model ExamCertificate {
   @@index([examId])
   @@map("exam_certificates")
 }
+
+
+enum CodeScoopEdition {
+  LEARN      // Grades 1–2
+  DISCOVER   // Grades 3–4
+  CREATE     // Grades 5–6
+  INNOVATE   // Grades 7–8
+}
+
+enum CodeScoopPaymentStatus {
+  UNPAID
+  PAID
+}
+
+model CodeScoop {
+  id              String          @id @default(cuid())
+  orderNumber     String          @unique            // e.g. CS-20261113-AB12
+
+  // Parent / Guardian Details
+  parentName      String
+  email           String
+  mobile          String
+
+  // Subscription Preferences
+  edition         CodeScoopEdition                          // Student's Grade
+  durationMonths  Int                                // 6 or 12
+
+  // Delivery (printed editions) – optional
+  deliveryPin     String?
+  deliveryAddress String?         @db.Text
+
+  consent         Boolean
+  consentAt       DateTime
+  paymentStatus   CodeScoopPaymentStatus @default(UNPAID)
+  paidAt          DateTime?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([email])
+  @@index([mobile])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("code_scoop")
+}
