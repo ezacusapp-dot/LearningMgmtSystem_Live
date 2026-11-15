@@ -7,12 +7,7 @@ import {
   createCodeScoopService, getCodeScoopsService, getCodeScoopByIdService,
   updateCodeScoopService, deleteCodeScoopService, ServiceError,
 } from "./code-scoop.service";
-
-// Replace with your real admin/session check when ready.
-const assertAdmin = (req: Request) => {
-  const key = process.env.ADMIN_API_KEY;
-  if (!key || req.headers.get("x-admin-key") !== key) throw new ServiceError("Unauthorized", 401);
-};
+import { assertAdmin } from "./admin-auth";
 
 const fail = (err: unknown) => {
   if (err instanceof ZodError)
@@ -47,7 +42,7 @@ export const createCodeScoopController = async (req: Request) => {
 // GET list – admin
 export const getCodeScoopsController = async (req: Request) => {
   try {
-    assertAdmin(req);
+    await assertAdmin(req); // <-- added await
     const q = validateListCodeScoop(Object.fromEntries(new URL(req.url).searchParams));
     return NextResponse.json({ success: true, ...(await getCodeScoopsService(q)) });
   } catch (err) {
@@ -58,7 +53,7 @@ export const getCodeScoopsController = async (req: Request) => {
 // GET one – admin
 export const getCodeScoopByIdController = async (req: Request, id: string) => {
   try {
-    assertAdmin(req);
+    await assertAdmin(req); // <-- added await
     return NextResponse.json({ success: true, data: await getCodeScoopByIdService(id) });
   } catch (err) {
     return fail(err);
@@ -68,7 +63,7 @@ export const getCodeScoopByIdController = async (req: Request, id: string) => {
 // UPDATE – admin
 export const updateCodeScoopController = async (req: Request, id: string) => {
   try {
-    assertAdmin(req);
+    await assertAdmin(req); // <-- added await
     const data = validateUpdateCodeScoop(await req.json());
     return NextResponse.json({
       success: true,
@@ -83,7 +78,7 @@ export const updateCodeScoopController = async (req: Request, id: string) => {
 // DELETE – admin
 export const deleteCodeScoopController = async (req: Request, id: string) => {
   try {
-    assertAdmin(req);
+    await assertAdmin(req); // <-- added await
     await deleteCodeScoopService(id);
     return NextResponse.json({ success: true, message: "Subscription Deleted Successfully" });
   } catch (err) {
