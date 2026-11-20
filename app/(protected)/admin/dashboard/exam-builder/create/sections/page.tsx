@@ -27,10 +27,7 @@ export default function SectionsBuilderPage() {
   const searchParams = useSearchParams();
   const examId = searchParams.get("examId");
   const [sections, setSections] = useState<Section[]>([
-  { title: "Section A – Basic Concepts", description: "Basic Concepts (Easy)", order: 0, difficulty: "Easy", questionType: "Conceptual" },
-  { title: "Section B – Code Understanding", description: "Code Understanding (Medium)", order: 1, difficulty: "Medium", questionType: "Prediction" },
-  { title: "Section C – Code Analysis", description: "Code Analysis (Difficult)", order: 2, difficulty: "Difficult", questionType: "Debugging" },
-  { title: "Section D – Logical Programming", description: "Logical Programming (Challenging)", order: 3, difficulty: "Challenging", questionType: "ProblemSolving" },
+  { title: "Section A ", description: "Add All Question", order: 0, difficulty: "Easy", questionType: "Conceptual" }
 ]);
   const [saving, setSaving] = useState(false);
 
