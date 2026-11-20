@@ -188,7 +188,7 @@ const questionSchema = z
       .nullable()
       .optional(),
     // REQUIRED now: the paper generator picks questions by type
-    questionType: z.enum(QUESTION_TYPES, { required_error: "Question type is required" }),
+    questionType: z.enum(QUESTION_TYPES, { error: "Question type is required" }),
     order: z.number().int().min(0),
     options: z
       .array(optionSchema)
