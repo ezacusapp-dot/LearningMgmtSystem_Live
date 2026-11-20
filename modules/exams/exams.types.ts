@@ -246,5 +246,5 @@ export interface ExamQueryParams {
 
 export interface SubmitAnswerDto {
   questionId: string;
-  optionId: string | null; // null = left unanswered
+    optionId?: string;
 }
