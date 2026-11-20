@@ -1,6 +1,4 @@
-// // lib/api/student-exams.ts
-// // Thin client around the existing /api/exams endpoints, scoped to what
-// // the student-facing Final Exam UI needs.
+
 
 // export type ExamStatus = "Active" | "Inactive" | "Draft" | "Archived";
 // export type ExamInputMode = "text" | "image" | "code";
@@ -8,7 +6,6 @@
 // export interface ExamOption {
 //   id: string;
 //   text: string;
-//   isCorrect: boolean;
 //   order: number;
 //   inputMode: ExamInputMode;
 //   imageData: string | null;
@@ -16,14 +13,11 @@
 
 // export interface ExamQuestion {
 //   id: string;
-//   sectionId: string | null;
 //   question: string;
 //   inputMode: ExamInputMode;
 //   questionImage: string | null;
 //   codeSnippet: string | null;
 //   codeLanguage: string | null;
-//   explanation: string | null;
-//   explanationImage: string | null;
 //   points: number;
 //   order: number;
 //   options: ExamOption[];
@@ -34,8 +28,7 @@
 //   title: string;
 //   description: string | null;
 //   order: number;
-//   totalMarks: number;
-//   passingMarks: number | null;
+//   totalMarks: number; // computed server-side from question points
 //   timeLimit: number | null;
 //   questions: ExamQuestion[];
 // }
@@ -48,17 +41,13 @@
 //   totalMarks: number;
 //   passingMarks: number;
 //   duration: number; // minutes
-//   status: ExamStatus;
 //   maxAttempts: number;
-//   showAnswers: boolean;
-//   showExplanations: boolean;
 //   randomizeQuestions: boolean;
-//   requireProctoring: boolean;
 //   startDate: string | null;
 //   endDate: string | null;
 //   course?: { id: string; title: string } | null;
 //   sections: ExamSection[];
-//   questions: ExamQuestion[]; // ungrouped questions (sectionId === null)
+//   questions: ExamQuestion[]; // ungrouped questions
 // }
 
 // export interface ExamSummary {
@@ -135,9 +124,9 @@
 //   return json.data as ExamSummary[];
 // }
 
-// /** Full exam detail — sections, questions, and options. */
+// /** Student-safe exam detail: sections, questions and options WITHOUT answers. */
 // export async function getExam(examId: string): Promise<ExamDetail> {
-//   const res = await fetch(`/api/exams/${examId}`, { cache: "no-store" });
+//   const res = await fetch(`/api/exams/${examId}/student`, { cache: "no-store" });
 //   return unwrap<ExamDetail>(res);
 // }
 
@@ -166,11 +155,7 @@
 //   return unwrap<SubmitAttemptResult>(res);
 // }
 
-// lib/api/student-exams.ts
-// Thin client around the student-facing exam endpoints.
-// IMPORTANT: types here intentionally contain NO answer data
-// (no isCorrect, explanation, showAnswers, difficulty, etc.).
-
+// app/api/exams/student/student-exams.ts
 export type ExamStatus = "Active" | "Inactive" | "Draft" | "Archived";
 export type ExamInputMode = "text" | "image" | "code";
 
@@ -194,16 +179,13 @@ export interface ExamQuestion {
   options: ExamOption[];
 }
 
-export interface ExamSection {
-  id: string;
-  title: string;
-  description: string | null;
-  order: number;
-  totalMarks: number; // computed server-side from question points
-  timeLimit: number | null;
-  questions: ExamQuestion[];
+/** One line of the paper structure, e.g. { questionType: "Debugging", marks: 30 } */
+export interface BlueprintRow {
+  questionType: string;
+  marks: number;
 }
 
+/** Exam info for the instructions page. The question pool is NEVER included. */
 export interface ExamDetail {
   id: string;
   title: string;
@@ -217,8 +199,18 @@ export interface ExamDetail {
   startDate: string | null;
   endDate: string | null;
   course?: { id: string; title: string } | null;
-  sections: ExamSection[];
-  questions: ExamQuestion[]; // ungrouped questions
+  blueprint: BlueprintRow[];
+}
+
+/** THIS student's random paper, created when the attempt starts. */
+export interface StudentPaper {
+  attemptId: string;
+  title: string;
+  duration: number;
+  totalMarks: number;
+  startedAt: string;
+  endsAt: string; // drive the countdown from this
+  questions: ExamQuestion[];
 }
 
 export interface ExamSummary {
@@ -258,20 +250,13 @@ export interface ExamAttemptRecord {
   }[];
 }
 
-export interface SubmitAttemptPayload {
-  userId?: string;
-  timeTaken: number; // seconds spent
-  answers: { questionId: string; optionId: string }[];
-}
-
+// Same shape the result page already reads, so the result page needs no change.
 export interface SubmitAttemptResult {
   id: string;
   score: number;
   percentage: number;
   isPassed: boolean;
-  sectionScores: (ExamAttemptRecord["sectionScores"][number] & {
-    sectionTitle: string;
-  })[];
+  sectionScores: (ExamAttemptRecord["sectionScores"][number] & { sectionTitle: string })[];
 }
 
 async function unwrap<T>(res: Response): Promise<T> {
@@ -283,9 +268,7 @@ async function unwrap<T>(res: Response): Promise<T> {
 }
 
 /** List final exams, optionally scoped to a course. */
-export async function getFinalExams(opts?: {
-  courseId?: string;
-}): Promise<ExamSummary[]> {
+export async function getFinalExams(opts?: { courseId?: string }): Promise<ExamSummary[]> {
   const qs = new URLSearchParams({ examType: "FINAL", status: "Active", limit: "100" });
   if (opts?.courseId) qs.set("courseId", opts.courseId);
 
@@ -295,33 +278,42 @@ export async function getFinalExams(opts?: {
   return json.data as ExamSummary[];
 }
 
-/** Student-safe exam detail: sections, questions and options WITHOUT answers. */
+/** Exam info (title, marks, duration, paper structure). No questions. */
 export async function getExam(examId: string): Promise<ExamDetail> {
   const res = await fetch(`/api/exams/${examId}/student`, { cache: "no-store" });
   return unwrap<ExamDetail>(res);
 }
 
-/** Attempts a student has already made on this exam. */
-export async function getMyAttempts(
-  examId: string,
-  userId: string
-): Promise<ExamAttemptRecord[]> {
+/**
+ * Completed attempts only. Attempts are now created when the student STARTS,
+ * so an unfinished one must not count as "used" on the exams list / instructions page.
+ */
+export async function getMyAttempts(examId: string, userId: string): Promise<ExamAttemptRecord[]> {
   const qs = new URLSearchParams({ userId });
-  const res = await fetch(`/api/exams/${examId}/attempts?${qs.toString()}`, {
-    cache: "no-store",
-  });
-  return unwrap<ExamAttemptRecord[]>(res);
+  const res = await fetch(`/api/exams/${examId}/attempts?${qs.toString()}`, { cache: "no-store" });
+  const all = await unwrap<ExamAttemptRecord[]>(res);
+  // completedAt is set by the new submit; timeTaken covers attempts saved by the old submit route
+  return all.filter((a) => a.completedAt != null || a.timeTaken != null);
 }
 
-/** Submit a completed attempt — scoring happens server-side. */
+/** Start (or resume) an attempt. The server builds this student's random paper. */
+export async function startAttempt(examId: string): Promise<StudentPaper> {
+  // The server knows who you are from the login cookie
+  const res = await fetch(`/api/exams/${examId}/start`, { method: "POST" });
+  return unwrap<StudentPaper>(res);
+}
+
+/** Submit answers. Scoring happens on the server from the saved paper. */
 export async function submitAttempt(
   examId: string,
-  payload: SubmitAttemptPayload
+  attemptId: string,
+  answers: { questionId: string; optionId: string }[]
 ): Promise<SubmitAttemptResult> {
-  const res = await fetch(`/api/exams/${examId}/attempts`, {
+  const res = await fetch(`/api/exams/${examId}/attempts/${attemptId}/submit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ answers }),
   });
-  return unwrap<SubmitAttemptResult>(res);
+  const r = await unwrap<{ attemptId: string; score: number; percentage: number; isPassed: boolean }>(res);
+  return { id: r.attemptId, score: r.score, percentage: r.percentage, isPassed: r.isPassed, sectionScores: [] };
 }

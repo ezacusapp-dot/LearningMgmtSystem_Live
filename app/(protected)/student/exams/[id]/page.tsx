@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   CheckCircle2,
   Trophy,
+  Shuffle,
 } from "lucide-react";
 import {
   getExam,
@@ -23,12 +24,19 @@ import {
 import { useStudentSession } from "lib/use-student-session";
 
 const RULES = [
+  "Your question paper is generated at random when you click \u201cStart exam\u201d, so every student gets a different paper.",
   "The timer starts the moment you click \u201cStart exam\u201d and cannot be paused.",
   "Your exam is auto-submitted the instant the timer reaches zero.",
-  "Navigate freely between sections and questions using the answer map.",
-  "Do not refresh or close this tab — your progress is held in this session only.",
+  "If you refresh the page, you will get the same paper and the same remaining time.",
   "Submitted attempts are final and count toward your attempt limit.",
 ];
+
+const TYPE_LABELS: Record<string, string> = {
+  Conceptual: "Conceptual",
+  Prediction: "Prediction",
+  Debugging: "Debugging",
+  ProblemSolving: "Problem solving",
+};
 
 export default function ExamInstructionsPage() {
   const { id } = useParams<{ id: string }>();
@@ -88,17 +96,8 @@ export default function ExamInstructionsPage() {
   const closed = exam.endDate && now > new Date(exam.endDate).getTime();
   const attemptsLeft = exam.maxAttempts - attempts.length;
   const noAttemptsLeft = attemptsLeft <= 0;
-  const blocked = notYetOpen || closed || noAttemptsLeft;
-
-  const sectionRows =
-    exam.sections.length > 0
-      ? exam.sections.map((s) => ({
-          title: s.title,
-          questions: s.questions.length,
-          marks: s.totalMarks,
-          time: s.timeLimit,
-        }))
-      : [{ title: "All questions", questions: exam.questions.length, marks: exam.totalMarks, time: null }];
+  const notReady = exam.blueprint.length === 0; // admin has not set the paper structure yet
+  const blocked = notYetOpen || closed || noAttemptsLeft || notReady;
 
   return (
     <Shell>
@@ -110,9 +109,7 @@ export default function ExamInstructionsPage() {
         )}
         <h1 className="mt-1 text-3xl font-bold text-slate-100">{exam.title}</h1>
         {exam.description && (
-          <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            {exam.description}
-          </p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">{exam.description}</p>
         )}
 
         {/* Key facts */}
@@ -127,31 +124,44 @@ export default function ExamInstructionsPage() {
           />
         </div>
 
-        {/* Section breakdown */}
-        <div className="mt-6 overflow-hidden rounded-xl border border-[#2d3448]">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#173404]/50">
-                <th className="px-4 py-2 text-left font-semibold text-[#c0dd97]">Section</th>
-                <th className="px-4 py-2 text-right font-semibold text-[#c0dd97]">Questions</th>
-                <th className="px-4 py-2 text-right font-semibold text-[#c0dd97]">Marks</th>
-                <th className="px-4 py-2 text-right font-semibold text-[#c0dd97]">Time limit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sectionRows.map((s, i) => (
-                <tr key={i} className="border-t border-[#2d3448]">
-                  <td className="px-4 py-2 font-medium text-slate-200">{s.title}</td>
-                  <td className="px-4 py-2 text-right text-slate-400">{s.questions}</td>
-                  <td className="px-4 py-2 text-right text-slate-400">{s.marks}</td>
-                  <td className="px-4 py-2 text-right text-slate-400">
-                    {s.time ? `${s.time} min` : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Paper structure */}
+        {exam.blueprint.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 flex items-center gap-2">
+              <Shuffle className="w-4 h-4 text-[#639922]" />
+              Your paper
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Questions are picked at random for each student. The marks below are fixed.
+            </p>
+            <div className="mt-3 overflow-hidden rounded-xl border border-[#2d3448]">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#173404]/50">
+                    <th className="px-4 py-2 text-left font-semibold text-[#c0dd97]">Question type</th>
+                    <th className="px-4 py-2 text-right font-semibold text-[#c0dd97]">Marks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exam.blueprint.map((b) => (
+                    <tr key={b.questionType} className="border-t border-[#2d3448]">
+                      <td className="px-4 py-2 font-medium text-slate-200">
+                        {TYPE_LABELS[b.questionType] ?? b.questionType}
+                      </td>
+                      <td className="px-4 py-2 text-right text-slate-400">{b.marks}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t border-[#2d3448] bg-[#1e2230]">
+                    <td className="px-4 py-2 font-semibold text-slate-100">Total</td>
+                    <td className="px-4 py-2 text-right font-semibold text-slate-100">
+                      {exam.blueprint.reduce((s, b) => s + b.marks, 0)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Rules */}
         <div className="mt-6">
@@ -172,6 +182,12 @@ export default function ExamInstructionsPage() {
         </div>
 
         {/* Status messages */}
+        {notReady && (
+          <Notice tone="warning">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            This exam is not ready yet. Please check back later.
+          </Notice>
+        )}
         {notYetOpen && (
           <Notice tone="warning">
             <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -201,8 +217,8 @@ export default function ExamInstructionsPage() {
               className="mt-0.5 h-4 w-4 accent-[#639922]"
             />
             <span>
-              I have read the instructions above and I'm ready to begin. I
-              understand the timer starts immediately.
+              I have read the instructions above and I'm ready to begin. I understand my paper is
+              generated and the timer starts immediately.
             </span>
           </label>
         )}
@@ -212,9 +228,7 @@ export default function ExamInstructionsPage() {
             {attempts.length > 0 && (
               <>
                 <Trophy className="w-3.5 h-3.5 text-[#639922]" />
-                Previous best:{" "}
-                {attempts.reduce((a, b) => (b.score > a ? b.score : a), 0)} /{" "}
-                {exam.totalMarks}
+                Previous best: {attempts.reduce((a, b) => (b.score > a ? b.score : a), 0)} / {exam.totalMarks}
               </>
             )}
           </p>

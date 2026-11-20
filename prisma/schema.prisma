@@ -705,6 +705,7 @@ model Exam {
 
   course    Courses?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
   sections  ExamSection[]
+  blueprint ExamBlueprintRule[] 
   questions ExamQuestion[]
   attempts  ExamAttempt[]
 examCertificates ExamCertificate[] 
@@ -713,6 +714,20 @@ examCertificates ExamCertificate[]
   @@index([status])
   @@map("exams")
 }
+model ExamBlueprintRule {
+  id           String           @id @default(cuid())
+  examId       String
+  questionType ExamQuestionType
+  marks        Int              // marks of this type in EACH student's paper
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, questionType])
+  @@map("exam_blueprint_rules")
+}
+
 
 model ExamSection {
   id           String            @id @default(cuid())
@@ -751,19 +766,23 @@ model ExamQuestion {
   bloomLevel       ExamBloomLevel?
   questionType     ExamQuestionType?
   order            Int
+  isArchived       Boolean           @default(false)   // <-- ADD
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  exam    Exam                @relation(fields: [examId], references: [id], onDelete: Cascade)
-  section ExamSection?        @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-  options ExamOption[]
-  answers ExamAttemptAnswer[]
+  exam             Exam                  @relation(fields: [examId], references: [id], onDelete: Cascade)
+  section          ExamSection?          @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  options          ExamOption[]
+  answers          ExamAttemptAnswer[]
+  attemptQuestions ExamAttemptQuestion[]               // <-- ADD
 
-  @@unique([examId, order])
+  // @@unique([examId, order])   <-- DELETE this line
+  @@index([examId, order])                             // <-- ADD
   @@index([examId])
   @@index([sectionId])
   @@map("exam_questions")
 }
+
 
 model ExamOption {
   id         String        @id @default(cuid())
@@ -790,30 +809,45 @@ model ExamOption {
 model ExamAttempt {
   id          String    @id @default(uuid())
   examId      String
-  userId      String?          // kept for backward compat, unused going forward
-  studentId   Int?             // NEW — real FK to Student
-  score       Int
+  userId      String?
+  studentId   Int?
+  score       Int       @default(0)        // <-- CHANGED (was: Int)
   percentage  Float?
-  isPassed    Boolean
+  isPassed    Boolean   @default(false)    // <-- CHANGED (was: Boolean)
   timeTaken   Int?
   startedAt   DateTime?
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  exam            Exam                @relation(fields: [examId], references: [id], onDelete: Cascade)
-  student         Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade) // NEW
+  exam            Exam                  @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student         Student?              @relation(fields: [studentId], references: [id], onDelete: Cascade)
   answers         ExamAttemptAnswer[]
   sectionScores   ExamSectionScore[]
   certificate     Certificate?
-  examCertificate ExamCertificate?    // NEW
+  examCertificate ExamCertificate?
+  questions       ExamAttemptQuestion[]      // <-- ADD
 
   @@index([examId])
   @@index([userId])
-  @@index([studentId])              // NEW
+  @@index([studentId])
   @@map("exam_attempts")
 }
 
+model ExamAttemptQuestion {
+  id         String @id @default(cuid())
+  attemptId  String
+  questionId String
+  order      Int
+
+  attempt  ExamAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question ExamQuestion @relation(fields: [questionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
+  @@map("exam_attempt_questions")
+}
 model ExamAttemptAnswer {
   id         String   @id @default(cuid())
   attemptId  String
