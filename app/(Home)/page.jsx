@@ -80,12 +80,27 @@ const smoothScroll = (elementId) => {
 };
 
 // ------------------------------ COMPONENTS -----------------------------------
+// function Logo() {
+//   return (
+//     <div className="flex items-center gap-3 cursor-pointer" onClick={() => smoothScroll("home")}>
+//       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#49205E] to-[#BC579E] flex items-center justify-center">
+//         <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" /></svg>
+//       </div>
+//       <div>
+//         <div className="font-bold text-gray-900 text-base leading-tight">Code Excellence</div>
+//         <div className="text-xs text-purple-600">EdTech Platform</div>
+//       </div>
+//     </div>
+//   );
+// }
 function Logo() {
   return (
     <div className="flex items-center gap-3 cursor-pointer" onClick={() => smoothScroll("home")}>
-      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#49205E] to-[#BC579E] flex items-center justify-center">
-        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" /></svg>
-      </div>
+      <img
+        src="/image/logo.png"
+        alt="Code Excellence logo"
+        className="w-10 h-10 rounded-xl object-contain"
+      />
       <div>
         <div className="font-bold text-gray-900 text-base leading-tight">Code Excellence</div>
         <div className="text-xs text-purple-600">EdTech Platform</div>
@@ -132,7 +147,7 @@ function Navbar() {
           </div> */}
           <button onClick={() => router.push("/student_login")} className="px-3 py-1.5 rounded-lg font-medium text-white text-sm transition-all duration-200 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #49205E, #BC579E)", boxShadow: "0 0 15px rgba(73,32,94,0.3)" }}>Student Login</button>
           <button onClick={() => router.push("/school-login")} className="px-3 py-1.5 rounded-lg font-medium text-white text-sm transition-all duration-200 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #49205E, #BC579E)", boxShadow: "0 0 15px rgba(73,32,94,0.3)" }}>School Login</button>
-          <button className="px-3 py-1.5 rounded-lg font-medium text-white text-sm transition-all duration-200 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #49205E, #BC579E)", boxShadow: "0 0 15px rgba(73,32,94,0.3)" }}>Get Started</button>
+          {/* <button className="px-3 py-1.5 rounded-lg font-medium text-white text-sm transition-all duration-200 hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #49205E, #BC579E)", boxShadow: "0 0 15px rgba(73,32,94,0.3)" }}>Get Started</button> */}
         </div>
       </div>
     </nav>
