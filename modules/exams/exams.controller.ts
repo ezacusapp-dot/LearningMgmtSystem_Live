@@ -375,7 +375,7 @@ const idRequired = () =>
   Response.json({ status: false, message: "Exam ID is required" }, { status: 400 });
 
 const zodResponse = (err: any) =>
-  Response.json({ status: false, message: "Validation failed", errors: err.errors }, { status: 400 });
+  Response.json({ status: false, message: "Validation failed", errors: err.issues }, { status: 400 });
 
 const notFoundOr = (err: any, fallback: number) =>
   err.message?.includes("not found") || err.message === "Exam not found" ? 404 : fallback;
